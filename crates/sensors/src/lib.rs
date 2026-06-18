@@ -59,6 +59,8 @@ pub struct Session {
     pub accel: Vec<AccelSample>,
     pub gyro: Vec<GyroSample>,
     pub mag: Vec<MagSample>,
+    // Not collected by Clue SL; optional so older clients can omit it
+    #[serde(default)]
     pub baro: Vec<BaroSample>,
     pub ble: Vec<BleSample>,
 }
