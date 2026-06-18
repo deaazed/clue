@@ -72,13 +72,13 @@ Repository: https://github.com/deaazed/clue
 
 **Active milestone: [CLUE - Sensor Logger (Clue SL)](https://github.com/deaazed/clue/milestone/1)** (due 2026-07-31)
 
-Issues: [#1 Infrastructure](https://github.com/deaazed/clue/issues/1) · [#2 Sensor Collection](https://github.com/deaazed/clue/issues/2) · [#3 Visualization](https://github.com/deaazed/clue/issues/3)
+Issues: [#1 Infrastructure](https://github.com/deaazed/clue/issues/1) ✅ · [#2 Sensor Collection](https://github.com/deaazed/clue/issues/2) ✅ · [#3 Visualization](https://github.com/deaazed/clue/issues/3) ← active
 
 ---
 
 ## Current State (as of 2026-06-18)
 
-**Current phase:** Phase 0 complete → **Phase 1 (Sensor Logger) starting.**
+**Current phase:** Phase 1 — Sensor Logger. Issue #1 (Infrastructure) closed. Issue #2 (Sensor Collection) **done**. Working on **issue #3 (Visualization)**.
 
 ### apps/mobile — map/home prototype
 
@@ -105,11 +105,20 @@ Package: `clue_sl` · Org: `com.clue` · Android + iOS only
 |------|-------|
 | `lib/main.dart` | Entry point → ClueApp |
 | `lib/app.dart` | MaterialApp.router + GoRouter + bottom nav shell |
-| `lib/features/logger/logger_page.dart` | Placeholder (sensor recording) |
-| `lib/features/sessions/sessions_page.dart` | Placeholder (session browser) |
+| `lib/models/session.dart` | Session, Vec3, Sample\<T\>, BleDevice — mirrors Rust types |
+| `lib/services/session_repository.dart` | Save/load sessions as JSON in Documents/clue_sessions/ |
+| `lib/features/logger/logger_controller.dart` | ChangeNotifier — start/stop, IMU streams, BLE scan loop |
+| `lib/features/logger/logger_page.dart` | Record/stop UI + live sensor readout + elapsed timer |
+| `lib/features/sessions/sessions_page.dart` | Session list with pull-to-refresh |
 | `android/app/src/main/AndroidManifest.xml` | Location + BLE permissions declared |
 
 Dependencies: `go_router`, `sensors_plus`, `flutter_blue_plus`, `path_provider`
+
+Sensor recording design:
+- IMU at 20 Hz (50 ms period) via `sensors_plus` — accel, gyro, mag
+- BLE scan every 5 s (4 s timeout) via `flutter_blue_plus`; skipped gracefully if BT off or permissions denied
+- UI refreshes at 10 Hz (100 ms timer) — sensor data accumulates independently at full rate
+- Sessions stored as `Documents/clue_sessions/<startedAtMs>.json` (one file per session)
 
 ### Infrastructure
 
@@ -119,7 +128,7 @@ Dependencies: `go_router`, `sensors_plus`, `flutter_blue_plus`, `path_provider`
 - `crates/pdr`, `fingerprint`, `mapping`, `localization` are stubs (depend on `sensors`)
 - `backend/` is a real Axum server: health check + session CRUD, SQLx + PostgreSQL, auto-migrations
 - Rust installed (GNU toolchain `x86_64-pc-windows-gnu`). Run `cargo build` from the repo root.
-- No database yet (PostgreSQL install pending — see `SETUP_BACKEND.md`). No CI yet.
+- PostgreSQL database installed. Ran `cargo run -p backend` from the repo root and ran `Invoke-RestMethod http://localhost:3000/health` resulting `ok`.
 
 ---
 
@@ -181,7 +190,7 @@ Working from `apps/mobile.v0` (package `clue_sl`):
 - `maplibre_gl` dropped in favour of `flutter_map` (v1 Android embedding incompatibility)
 - Sensor logger lives in `apps/mobile.v0` (separate app from the map prototype in `apps/mobile`)
 - `sensors_plus` chosen for IMU; `flutter_blue_plus` for BLE
-- Local session format still undecided (SQLite vs flat files vs protobuf)
+- Local session format: one JSON file per session in `Documents/clue_sessions/<id>.json`
 - Barometer and Wi-Fi scanning not in Clue SL milestone scope
 
 ---

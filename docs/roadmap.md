@@ -22,11 +22,11 @@ Three issue groups:
 
 ### Sensor Collection
 
-- [ ] Accelerometer
-- [ ] Gyroscope
-- [ ] Magnetometer
-- [ ] BLE scan
-- [ ] Session recording
+- [x] Accelerometer
+- [x] Gyroscope
+- [x] Magnetometer
+- [x] BLE scan
+- [x] Session recording
 
 ### Visualization
 

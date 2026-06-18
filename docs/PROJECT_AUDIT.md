@@ -2,15 +2,15 @@
 
 *Update this file at the end of each work session or after any significant structural change.*
 
-Last updated: 2026-06-18
+Last updated: 2026-06-19
 
 ---
 
 ## Current Phase
 
-**Phase 1 — Sensor Logger** (starting)
+**Phase 1 — Sensor Logger** (in progress)
 
-Phase 0 is complete.
+Phase 0 complete. Issue #1 (Infrastructure) closed. Active issue: **#2 Sensor Collection** in `apps/mobile.v0`.
 
 ---
 
@@ -23,13 +23,13 @@ Phase 0 is complete.
 | Infrastructure | Repository cleanup | ✅ Done |
 | Infrastructure | Flutter application (apps/mobile.v0 created) | ✅ Done |
 | Infrastructure | Rust core setup | ✅ Done |
-| Infrastructure | Axum backend | ✅ Done (needs `cargo run -p backend` after PostgreSQL setup) |
-| Infrastructure | PostgreSQL | ✅ Done (needs install + DB creation — see SETUP_BACKEND.md) |
-| Sensor Collection | Accelerometer | Not started |
-| Sensor Collection | Gyroscope | Not started |
-| Sensor Collection | Magnetometer | Not started |
-| Sensor Collection | BLE scan | Not started |
-| Sensor Collection | Session recording | Not started |
+| Infrastructure | Axum backend | ✅ Done |
+| Infrastructure | PostgreSQL | ✅ Done |
+| Sensor Collection | Accelerometer | ✅ Done |
+| Sensor Collection | Gyroscope | ✅ Done |
+| Sensor Collection | Magnetometer | ✅ Done |
+| Sensor Collection | BLE scan | ✅ Done |
+| Sensor Collection | Session recording | ✅ Done |
 | Visualization | Session browser | Not started |
 | Visualization | Session replay | Not started |
 | Visualization | Trajectory rendering | Not started |
@@ -73,7 +73,7 @@ AndroidManifest: `ACCESS_FINE_LOCATION` + `ACCESS_COARSE_LOCATION` declared.
 
 ## apps/mobile.v0 (Clue SL — active)
 
-**Status:** Created, dependencies installed. Placeholder UI only — sensor implementation not started.
+**Status:** Sensor recording fully implemented. Runs and saves sessions locally on device.
 
 Package name: `clue_sl` · Org: `com.clue` · Platforms: Android + iOS
 
@@ -88,10 +88,14 @@ Structure:
 ```
 lib/
 ├── main.dart
-├── app.dart                        # MaterialApp.router + shell nav
+├── app.dart                              # MaterialApp.router + shell nav
+├── models/session.dart                   # Session, Vec3, Sample<T>, BleDevice
+├── services/session_repository.dart      # Save/load sessions as JSON to Documents/
 └── features/
-    ├── logger/logger_page.dart     # placeholder
-    └── sessions/sessions_page.dart # placeholder
+    ├── logger/
+    │   ├── logger_controller.dart        # Recording state (ChangeNotifier)
+    │   └── logger_page.dart             # Record/stop UI + live sensor readout
+    └── sessions/sessions_page.dart      # Saved session list with pull-to-refresh
 ```
 
 AndroidManifest permissions:
@@ -148,7 +152,7 @@ Not configured.
 | `sensors_plus` for IMU | Standard Flutter sensor package, covers all required streams |
 | `flutter_blue_plus` for BLE | Most maintained BLE package for Flutter |
 | Barometer + Wi-Fi not in Clue SL scope | Not in GitHub milestone issues |
-| Local session format | **Undecided** — SQLite vs flat files vs protobuf |
+| Local session format | JSON per session — one file per session in `Documents/clue_sessions/<id>.json` |
 
 ---
 
