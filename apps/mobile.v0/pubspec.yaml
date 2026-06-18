@@ -23,6 +23,9 @@ dependencies:
   # Session storage
   path_provider: ^2.1.4
 
+  # Backend upload
+  http: ^1.2.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
