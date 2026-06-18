@@ -117,9 +117,9 @@ Dependencies: `go_router`, `sensors_plus`, `flutter_blue_plus`, `path_provider`
 - Rust workspace configured at `Cargo.toml` (root), 5 crates + backend stub
 - `crates/sensors` has real types: `Session`, `Vec3`, `Sample<T>`, all sensor aliases, 3 unit tests
 - `crates/pdr`, `fingerprint`, `mapping`, `localization` are stubs (depend on `sensors`)
-- `backend/` is a stub binary (Axum wiring is the next infrastructure task)
+- `backend/` is a real Axum server: health check + session CRUD, SQLx + PostgreSQL, auto-migrations
 - Rust installed (GNU toolchain `x86_64-pc-windows-gnu`). Run `cargo build` from the repo root.
-- No database yet. No CI yet.
+- No database yet (PostgreSQL install pending — see `SETUP_BACKEND.md`). No CI yet.
 
 ---
 

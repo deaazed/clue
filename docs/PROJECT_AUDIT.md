@@ -23,8 +23,8 @@ Phase 0 is complete.
 | Infrastructure | Repository cleanup | ✅ Done |
 | Infrastructure | Flutter application (apps/mobile.v0 created) | ✅ Done |
 | Infrastructure | Rust core setup | ✅ Done |
-| Infrastructure | Axum backend | Not started |
-| Infrastructure | PostgreSQL | Not started |
+| Infrastructure | Axum backend | ✅ Done (needs `cargo run -p backend` after PostgreSQL setup) |
+| Infrastructure | PostgreSQL | ✅ Done (needs install + DB creation — see SETUP_BACKEND.md) |
 | Sensor Collection | Accelerometer | Not started |
 | Sensor Collection | Gyroscope | Not started |
 | Sensor Collection | Magnetometer | Not started |
@@ -117,7 +117,17 @@ Workspace compiles. Run `cargo test -p sensors` to verify (3 tests).
 
 ## Backend
 
-Not started. Directories exist as scaffolds with `.gitkeep`.
+Axum + SQLx backend implemented. Awaiting PostgreSQL install (see `SETUP_BACKEND.md`).
+
+Routes:
+- `GET  /health` — liveness check
+- `POST /api/sessions` — upload a `Session` (JSON body matching `crates/sensors::Session`)
+- `GET  /api/sessions` — list sessions (id, timestamps, sample count)
+- `GET  /api/sessions/:id` — retrieve full session JSON
+
+Migration: `backend/migrations/0001_create_sessions.sql` — runs automatically on first boot.
+
+Schema: `sessions(id UUID PK, started_at_ms, duration_ms, sample_count, data JSONB, recorded_at)`
 
 ## Database
 

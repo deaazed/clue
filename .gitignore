@@ -19,6 +19,10 @@ migrate_working_dir/
 # Rust
 target/
 
+# Environment — never commit secrets
+.env
+.env.local
+
 # Flutter (generated — should live in apps/mobile/, not root)
 .dart_tool/
 .flutter-plugins

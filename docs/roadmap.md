@@ -17,8 +17,8 @@ Three issue groups:
 - [x] Repository cleanup
 - [x] Flutter application
 - [x] Rust core setup
-- [ ] Axum backend
-- [ ] PostgreSQL
+- [x] Axum backend
+- [x] PostgreSQL
 
 ### Sensor Collection
 
@@ -43,8 +43,8 @@ Three issue groups:
 - [x] Repository cleanup (remove unused platforms, update pubspec description)
 - [x] Move Flutter app to `apps/mobile/`
 - [x] Create Rust core library (`crates/`)
-- [ ] Create Axum backend (`backend/`)
-- [ ] Configure PostgreSQL
+- [x] Create Axum backend (`backend/`)
+- [x] Configure PostgreSQL
 - [ ] Configure CI
 
 **Deliverable:** application compiles and backend deploys.
