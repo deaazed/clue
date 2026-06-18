@@ -1,57 +1,42 @@
 # Clue
 
-Clue est une application Flutter multi-plateforme.
+Crowdsourced indoor localization system.
 
-## Prérequis
+Users contribute sensor traces, trajectories, and location markers while moving through indoor environments. Clue reconstructs indoor spaces from this collective data and helps users find items and points of interest inside buildings — supermarkets, airports, malls, offices.
+
+## Requirements
 
 - [Flutter SDK](https://flutter.dev/docs/get-started/install)
-- [Flutter extension pour Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=Dart-Code.flutter)
+- Android or iOS device / emulator
 
-## Installation
+## Setup
 
-1. Clonez ce dépôt :
-    ```sh
-    git clone <URL_DU_DEPOT>
-    cd clue
-    ```
-
-2. Installez les dépendances :
-    ```sh
-    flutter pub get
-    ```
-
-## Exécution
-
-Pour exécuter l'application sur un émulateur ou un appareil connecté, utilisez la commande suivante :
 ```sh
+git clone https://github.com/deaazed/clue.git
+cd clue
+flutter pub get
 flutter run
 ```
 
-## Tests
+## Project structure
 
-Pour exécuter les tests unitaires, utilisez la commande suivante :
-```sh
-flutter test
+```
+clue/
+├── lib/
+│   ├── main.dart
+│   ├── pages/
+│   ├── components/
+│   └── services/
+├── assets/
+├── android/
+├── ios/
+└── docs/
 ```
 
-## Structure du projet
+## Roadmap
 
-- `lib/` : Contient le code source principal de l'application.
-- `test/` : Contient les tests unitaires.
-- `android/` : Contient les fichiers spécifiques à la plateforme Android.
-- `ios/` : Contient les fichiers spécifiques à la plateforme iOS.
-- `linux/` : Contient les fichiers spécifiques à la plateforme Linux.
-- `macos/` : Contient les fichiers spécifiques à la plateforme macOS.
-- `windows/` : Contient les fichiers spécifiques à la plateforme Windows.
-- `web/` : Contient les fichiers spécifiques à la plateforme Web.
+See [docs/roadmap.md](docs/roadmap.md).
 
-## Contribution
+## License
 
-Les contributions sont les bienvenues ! Veuillez soumettre une pull request ou ouvrir une issue pour discuter des changements que vous souhaitez apporter.
-
-## Licence
-
-Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
-```
-
-N'oubliez pas de remplacer `<URL_DU_DEPOT>` par l'URL de votre dépôt Git.
+MIT
