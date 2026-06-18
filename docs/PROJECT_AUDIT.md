@@ -22,7 +22,7 @@ Phase 0 is complete.
 |-------|------|--------|
 | Infrastructure | Repository cleanup | ✅ Done |
 | Infrastructure | Flutter application (apps/mobile.v0 created) | ✅ Done |
-| Infrastructure | Rust core setup | Not started |
+| Infrastructure | Rust core setup | ✅ Done |
 | Infrastructure | Axum backend | Not started |
 | Infrastructure | PostgreSQL | Not started |
 | Sensor Collection | Accelerometer | Not started |
@@ -105,7 +105,15 @@ VS Code launch configs: `clue SL (debug/profile/release)` — `cwd: apps/mobile.
 
 ## Rust crates
 
-Not started. Directories exist as scaffolds with `.gitkeep`.
+Workspace compiles. Run `cargo test -p sensors` to verify (3 tests).
+
+| Crate | Path | Status |
+|-------|------|--------|
+| `sensors` | `crates/sensors/` | Types defined — `Session`, `AccelSample`, `GyroSample`, `MagSample`, `BaroSample`, `BleSample`, 3 unit tests |
+| `pdr` | `crates/pdr/` | Stub — Phase 3 |
+| `fingerprint` | `crates/fingerprint/` | Stub — Phase 7 |
+| `mapping` | `crates/mapping/` | Stub — Phase 5 |
+| `localization` | `crates/localization/` | Stub — Phase 8 |
 
 ## Backend
 

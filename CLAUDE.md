@@ -114,10 +114,12 @@ Dependencies: `go_router`, `sensors_plus`, `flutter_blue_plus`, `path_provider`
 ### Infrastructure
 
 - Mono-repo structure in place: `apps/`, `crates/`, `backend/`, `data/`
-- No Rust code yet
-- No backend yet
-- No database yet
-- No CI yet
+- Rust workspace configured at `Cargo.toml` (root), 5 crates + backend stub
+- `crates/sensors` has real types: `Session`, `Vec3`, `Sample<T>`, all sensor aliases, 3 unit tests
+- `crates/pdr`, `fingerprint`, `mapping`, `localization` are stubs (depend on `sensors`)
+- `backend/` is a stub binary (Axum wiring is the next infrastructure task)
+- Rust installed (GNU toolchain `x86_64-pc-windows-gnu`). Run `cargo build` from the repo root.
+- No database yet. No CI yet.
 
 ---
 

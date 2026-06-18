@@ -1,0 +1,10 @@
+[package]
+name = "localization"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+sensors     = { path = "../sensors" }
+fingerprint = { path = "../fingerprint" }
+mapping     = { path = "../mapping" }
