@@ -17,6 +17,12 @@ class SessionRepository {
     await file.writeAsString(session.encode());
   }
 
+  static Future<void> delete(String id) async {
+    final dir = await _dir();
+    final file = File('${dir.path}/$id.json');
+    if (await file.exists()) await file.delete();
+  }
+
   static Future<List<Session>> loadAll() async {
     final dir = await _dir();
     final entities = await dir.list().toList();
