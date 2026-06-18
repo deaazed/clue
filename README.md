@@ -13,7 +13,7 @@ Users contribute sensor traces, trajectories, and location markers while moving 
 
 ```sh
 git clone https://github.com/deaazed/clue.git
-cd clue
+cd clue/apps/mobile
 flutter pub get
 flutter run
 ```
@@ -22,15 +22,12 @@ flutter run
 
 ```
 clue/
-├── lib/
-│   ├── main.dart
-│   ├── pages/
-│   ├── components/
-│   └── services/
-├── assets/
-├── android/
-├── ios/
-└── docs/
+├── apps/
+│   └── mobile/          # Flutter app (Android + iOS)
+├── crates/              # Rust core (sensors, PDR, fingerprinting, mapping, localization)
+├── backend/             # Rust/Axum server
+├── data/                # Raw sensor recordings
+└── docs/                # Vision, roadmap, project audit
 ```
 
 ## Roadmap

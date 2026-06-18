@@ -1,89 +1,75 @@
 import 'package:flutter/material.dart';
-import 'package:maplibre_gl/maplibre_gl.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 
-const apiKey = "bYT3LzSnPtEGqyGhC0iZ";
-const styleUrl = "https://api.maptiler.com/maps/streets-v2-light/style.json";
-
-class MapComponent extends StatelessWidget {
+class MapComponent extends StatefulWidget {
   const MapComponent({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return const Map();
-  }
+  State<MapComponent> createState() => _MapComponentState();
 }
 
-class Map extends StatefulWidget {
-  const Map({super.key});
-
-  @override
-  State createState() => MapState();
-}
-
-class MapState extends State<Map> {
-  LatLng _currentLocation = const LatLng(0.0, 0.0);
-  MapLibreMapController? _mapController;
+class _MapComponentState extends State<MapComponent> {
+  final _mapController = MapController();
+  LatLng? _currentLocation;
 
   @override
   void initState() {
     super.initState();
-    _getCurrentLocation();
+    _fetchLocation();
   }
 
-  void _getCurrentLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
+  Future<void> _fetchLocation() async {
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return;
 
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      return Future.error('Location services are disabled.');
-    }
-
-    permission = await Geolocator.checkPermission();
+    var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return Future.error('Location permissions are denied');
-      }
     }
-    
-    if (permission == LocationPermission.deniedForever) {
-      return Future.error('Location permissions are permanently denied, we cannot request permissions.');
-    } 
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) return;
 
     final position = await Geolocator.getCurrentPosition();
-    setState(() {
-      _currentLocation = LatLng(position.latitude, position.longitude);
-    });
+    final location = LatLng(position.latitude, position.longitude);
 
-    if (_mapController != null) {
-      _mapController!.moveCamera(CameraUpdate.newLatLng(_currentLocation));
-
-      _mapController!.addSymbol(SymbolOptions(
-        geometry: _currentLocation,
-        iconSize: 1.5, // Adjust the icon size
-        textField: "Your Location", // Optional: Add a label
-        textSize: 14.0,
-        textOffset: const Offset(0, 1.5), // Adjust label position
-      ));
-    }
+    if (!mounted) return;
+    setState(() => _currentLocation = location);
+    _mapController.move(location, 16.0);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: MapLibreMap(
-        styleString: "$styleUrl?key=$apiKey",
-        myLocationEnabled: true,
-        myLocationTrackingMode: MyLocationTrackingMode.tracking,
-        initialCameraPosition: const CameraPosition(
-          target: LatLng(0, 0),
-          zoom: 14.0,
-        ),
-        trackCameraPosition: true,
-        onMapCreated: (controller) => _mapController = controller,
+    final center = _currentLocation ?? const LatLng(0, 0);
+
+    return FlutterMap(
+      mapController: _mapController,
+      options: MapOptions(
+        initialCenter: center,
+        initialZoom: 14.0,
       ),
+      children: [
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.example.clue',
+        ),
+        if (_currentLocation != null)
+          MarkerLayer(
+            markers: [
+              Marker(
+                point: _currentLocation!,
+                width: 40,
+                height: 40,
+                child: const Icon(
+                  Icons.location_pin,
+                  color: Colors.red,
+                  size: 40,
+                ),
+              ),
+            ],
+          ),
+      ],
     );
   }
 }
