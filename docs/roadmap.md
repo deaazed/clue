@@ -30,9 +30,9 @@ Three issue groups:
 
 ### Visualization
 
-- [ ] Session browser
-- [ ] Session replay
-- [ ] Trajectory rendering
+- [x] Session browser
+- [x] Session replay
+- [x] Trajectory rendering
 
 ---
 

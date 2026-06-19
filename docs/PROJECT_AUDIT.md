@@ -30,9 +30,9 @@ Phase 0 complete. Issue #1 (Infrastructure) closed. Active issue: **#2 Sensor Co
 | Sensor Collection | Magnetometer | ✅ Done |
 | Sensor Collection | BLE scan | ✅ Done |
 | Sensor Collection | Session recording | ✅ Done |
-| Visualization | Session browser | Not started |
-| Visualization | Session replay | Not started |
-| Visualization | Trajectory rendering | Not started |
+| Visualization | Session browser | ✅ Done |
+| Visualization | Session replay | ✅ Done |
+| Visualization | Trajectory rendering | ✅ Done |
 
 ---
 

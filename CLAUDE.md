@@ -78,7 +78,7 @@ Issues: [#1 Infrastructure](https://github.com/deaazed/clue/issues/1) ✅ · [#2
 
 ## Current State (as of 2026-06-18)
 
-**Current phase:** Phase 1 — Sensor Logger. Issue #1 (Infrastructure) closed. Issue #2 (Sensor Collection) **done**. Working on **issue #3 (Visualization)**.
+**Current phase:** Phase 1 — Sensor Logger. Issues #1 (Infrastructure) ✅, #2 (Sensor Collection) ✅, #3 (Visualization) ✅ all closed. **Milestone complete.**
 
 ### apps/mobile — map/home prototype
 
