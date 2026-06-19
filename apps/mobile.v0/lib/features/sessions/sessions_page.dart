@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../models/session.dart';
 import '../../services/session_repository.dart';
 import '../../services/api_client.dart';
@@ -212,6 +213,7 @@ class _SessionTile extends StatelessWidget {
               style: const TextStyle(fontFamily: 'monospace', fontSize: 13)),
           subtitle: Text('$durStr · ${session.sampleCount} samples'),
           trailing: _trailing(),
+          onTap: () => context.push('/sessions/${session.id}', extra: session),
         ),
       ),
     );

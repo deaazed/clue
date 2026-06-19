@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'features/logger/logger_page.dart';
 import 'features/sessions/sessions_page.dart';
+import 'features/session_detail/session_detail_page.dart';
+import 'models/session.dart';
 
 final _router = GoRouter(
   initialLocation: '/logger',
@@ -18,6 +20,13 @@ final _router = GoRouter(
           builder: (context, state) => const SessionsPage(),
         ),
       ],
+    ),
+    // Detail page lives outside the shell — no bottom nav bar, has back button
+    GoRoute(
+      path: '/sessions/:id',
+      builder: (context, state) => SessionDetailPage(
+        session: state.extra as Session,
+      ),
     ),
   ],
 );
