@@ -2,7 +2,7 @@
 
 *Update this file at the end of each work session or after any significant structural change.*
 
-Last updated: 2026-06-19
+Last updated: 2026-06-19 (end of session)
 
 ---
 
@@ -10,7 +10,7 @@ Last updated: 2026-06-19
 
 **Phase 1 — Sensor Logger** (in progress)
 
-Phase 0 complete. Issue #1 (Infrastructure) closed. Active issue: **#2 Sensor Collection** in `apps/mobile.v0`.
+Issues #1–#4 closed. Open: #5 CI, #6 Backend deployment, #7 App deployment, #8 Usability enhancements.
 
 ---
 
@@ -33,6 +33,11 @@ Phase 0 complete. Issue #1 (Infrastructure) closed. Active issue: **#2 Sensor Co
 | Visualization | Session browser | ✅ Done |
 | Visualization | Session replay | ✅ Done |
 | Visualization | Trajectory rendering | ✅ Done |
+| Session upload | Upload to backend | ✅ Done (#4) |
+| Usability | Background running + notifications + permissions + UI | Not started (#8) |
+| Deployment | CI setup | Not started (#5) |
+| Deployment | Backend (Hetzner) | Not started (#6) |
+| Deployment | mobile.v0 (APK / Play Store) | Not started (#7) |
 
 ---
 
@@ -88,15 +93,21 @@ Structure:
 ```
 lib/
 ├── main.dart
-├── app.dart                              # MaterialApp.router + shell nav
-├── models/session.dart                   # Session, Vec3, Sample<T>, BleDevice
-├── services/session_repository.dart      # Save/load sessions as JSON to Documents/
+├── app.dart                                   # Router + shell + /sessions/:id outside shell
+├── config.dart                                # kBackendUrl (set to LAN IP or server URL)
+├── models/session.dart                        # Session, Vec3, Sample<T>, BleDevice
+├── services/
+│   ├── session_repository.dart               # Save / load / delete sessions as JSON
+│   └── api_client.dart                       # POST /api/sessions upload
 └── features/
     ├── logger/
-    │   ├── logger_controller.dart        # Recording state (ChangeNotifier)
-    │   └── logger_page.dart             # Record/stop UI + live sensor readout
-    └── sessions/sessions_page.dart      # Saved session list with pull-to-refresh
+    │   ├── logger_controller.dart             # ChangeNotifier — recording lifecycle
+    │   └── logger_page.dart                  # Record/stop UI + live sensor readout
+    ├── sessions/sessions_page.dart            # List + Upload All + slide-out animation
+    └── session_detail/session_detail_page.dart  # Replay tab + Charts tab
 ```
+
+Dependencies: `go_router`, `sensors_plus`, `flutter_blue_plus`, `path_provider`, `http`
 
 AndroidManifest permissions:
 - `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`
@@ -121,11 +132,11 @@ Workspace compiles. Run `cargo test -p sensors` to verify (3 tests).
 
 ## Backend
 
-Axum + SQLx backend implemented. Awaiting PostgreSQL install (see `SETUP_BACKEND.md`).
+Axum + SQLx backend implemented and verified running locally.
 
 Routes:
 - `GET  /health` — liveness check
-- `POST /api/sessions` — upload a `Session` (JSON body matching `crates/sensors::Session`)
+- `POST /api/sessions` — upload a `Session` (JSON body; `baro` field optional via `#[serde(default)]`)
 - `GET  /api/sessions` — list sessions (id, timestamps, sample count)
 - `GET  /api/sessions/:id` — retrieve full session JSON
 
@@ -133,9 +144,11 @@ Migration: `backend/migrations/0001_create_sessions.sql` — runs automatically 
 
 Schema: `sessions(id UUID PK, started_at_ms, duration_ms, sample_count, data JSONB, recorded_at)`
 
+Note: if session `id` is not a valid UUID, the backend generates one (line 24, `routes/sessions.rs`).
+
 ## Database
 
-Not provisioned.
+PostgreSQL installed and running locally. Upload from device confirmed working.
 
 ## CI
 
@@ -151,13 +164,17 @@ Not configured.
 | Sensor logger in `apps/mobile.v0` | Separate app keeps it clean from the map prototype |
 | `sensors_plus` for IMU | Standard Flutter sensor package, covers all required streams |
 | `flutter_blue_plus` for BLE | Most maintained BLE package for Flutter |
+| `http` for upload | Minimal dep, sufficient for single POST endpoint |
 | Barometer + Wi-Fi not in Clue SL scope | Not in GitHub milestone issues |
 | Local session format | JSON per session — one file per session in `Documents/clue_sessions/<id>.json` |
+| `Session.baro` is `#[serde(default)]` | Accepts uploads from clients that don't record barometer |
+| Session detail outside ShellRoute | No bottom nav on detail page — clean back-button UX |
+| Charts use `CustomPainter` | Avoids charting library dependency; sufficient for magnitude plots |
+| Trajectory rendering deferred | Spatial path requires PDR (Phase 3); current charts show magnitude over time |
+| Commit style | `[#<issue>] - <message>` |
 
 ---
 
 ## Open Questions
 
-- Local session storage format for `apps/mobile.v0` (SQLite? JSONL files? protobuf?)
-- Trajectory rendering in visualization phase: Canvas 2D or MapLibre-style overlay?
 - When to introduce Rust FFI — before or after first real session is recorded?

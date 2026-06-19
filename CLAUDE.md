@@ -72,13 +72,13 @@ Repository: https://github.com/deaazed/clue
 
 **Active milestone: [CLUE - Sensor Logger (Clue SL)](https://github.com/deaazed/clue/milestone/1)** (due 2026-07-31)
 
-Issues: [#1 Infrastructure](https://github.com/deaazed/clue/issues/1) ✅ · [#2 Sensor Collection](https://github.com/deaazed/clue/issues/2) ✅ · [#3 Visualization](https://github.com/deaazed/clue/issues/3) ← active
+Issues: [#1](https://github.com/deaazed/clue/issues/1) ✅ · [#2](https://github.com/deaazed/clue/issues/2) ✅ · [#3](https://github.com/deaazed/clue/issues/3) ✅ · [#4](https://github.com/deaazed/clue/issues/4) ✅ · [#5 CI](https://github.com/deaazed/clue/issues/5) · [#6 Backend deploy](https://github.com/deaazed/clue/issues/6) · [#7 App deploy](https://github.com/deaazed/clue/issues/7) · [#8 Usability](https://github.com/deaazed/clue/issues/8)
 
 ---
 
-## Current State (as of 2026-06-18)
+## Current State (as of 2026-06-19)
 
-**Current phase:** Phase 1 — Sensor Logger. Issues #1 (Infrastructure) ✅, #2 (Sensor Collection) ✅, #3 (Visualization) ✅ all closed. **Milestone complete.**
+**Current phase:** Phase 1 — Sensor Logger. Issues #1–#4 closed. Open: #5 CI, #6 Backend deployment, #7 App deployment, #8 Usability enhancements.
 
 ### apps/mobile — map/home prototype
 
@@ -104,21 +104,35 @@ Package: `clue_sl` · Org: `com.clue` · Android + iOS only
 | File | Notes |
 |------|-------|
 | `lib/main.dart` | Entry point → ClueApp |
-| `lib/app.dart` | MaterialApp.router + GoRouter + bottom nav shell |
+| `lib/app.dart` | MaterialApp.router + GoRouter + shell nav + `/sessions/:id` route outside shell |
+| `lib/config.dart` | `kBackendUrl` constant — change to LAN IP or Hetzner URL |
 | `lib/models/session.dart` | Session, Vec3, Sample\<T\>, BleDevice — mirrors Rust types |
-| `lib/services/session_repository.dart` | Save/load sessions as JSON in Documents/clue_sessions/ |
+| `lib/services/session_repository.dart` | Save/load/delete sessions as JSON in Documents/clue_sessions/ |
+| `lib/services/api_client.dart` | `ApiClient.uploadSession()` — POST /api/sessions, 30 s timeout |
 | `lib/features/logger/logger_controller.dart` | ChangeNotifier — start/stop, IMU streams, BLE scan loop |
 | `lib/features/logger/logger_page.dart` | Record/stop UI + live sensor readout + elapsed timer |
-| `lib/features/sessions/sessions_page.dart` | Session list with pull-to-refresh |
+| `lib/features/sessions/sessions_page.dart` | Session list, per-tile upload icon, Upload All button with slide-out animation |
+| `lib/features/session_detail/session_detail_page.dart` | Replay tab (scrubber + live values) + Charts tab (magnitude line charts) |
 | `android/app/src/main/AndroidManifest.xml` | Location + BLE permissions declared |
 
-Dependencies: `go_router`, `sensors_plus`, `flutter_blue_plus`, `path_provider`
+Dependencies: `go_router`, `sensors_plus`, `flutter_blue_plus`, `path_provider`, `http`
 
 Sensor recording design:
 - IMU at 20 Hz (50 ms period) via `sensors_plus` — accel, gyro, mag
 - BLE scan every 5 s (4 s timeout) via `flutter_blue_plus`; skipped gracefully if BT off or permissions denied
 - UI refreshes at 10 Hz (100 ms timer) — sensor data accumulates independently at full rate
 - Sessions stored as `Documents/clue_sessions/<startedAtMs>.json` (one file per session)
+
+Upload design:
+- `ApiClient.uploadSession()` POSTs session JSON to `kBackendUrl/api/sessions`
+- On success: local file deleted, tile animates out (`SizeTransition` + `FadeTransition`, 350 ms)
+- Backend accepts missing `baro` field (`#[serde(default)]` on `Session.baro`)
+- `kBackendUrl` in `lib/config.dart` — set to machine LAN IP for physical device testing
+
+Session detail (issue #3):
+- Tap any session tile → `SessionDetailPage` (pushed outside shell, back button in AppBar)
+- **Replay tab**: MM:SS.t timer, scrubber slider, play/pause (100 ms ticks), binary-search sample lookup, live accel/gyro/mag/BLE tiles
+- **Charts tab**: accel / gyro / mag magnitude (√x²+y²+z²) over time, drawn with `CustomPainter` (no extra dep)
 
 ### Infrastructure
 
@@ -137,7 +151,7 @@ Sensor recording design:
 | Phase | Name | Duration | Status |
 |-------|------|----------|--------|
 | 0 | Project Setup | 1 week | **Done** |
-| 1 | Sensor Logger | 2 weeks | **In progress** |
+| 1 | Sensor Logger | 2 weeks | **In progress** (core done, pending: CI, deploy, usability) |
 | 2 | Replay System | 2 weeks | Not started |
 | 3 | Dead Reckoning | 4 weeks | Not started |
 | 4 | Indoor Visualization | 2 weeks | Not started |
@@ -189,9 +203,13 @@ Working from `apps/mobile.v0` (package `clue_sl`):
 
 - `maplibre_gl` dropped in favour of `flutter_map` (v1 Android embedding incompatibility)
 - Sensor logger lives in `apps/mobile.v0` (separate app from the map prototype in `apps/mobile`)
-- `sensors_plus` chosen for IMU; `flutter_blue_plus` for BLE
+- `sensors_plus` chosen for IMU; `flutter_blue_plus` for BLE; `http` for backend upload
 - Local session format: one JSON file per session in `Documents/clue_sessions/<id>.json`
 - Barometer and Wi-Fi scanning not in Clue SL milestone scope
+- `Session.baro` is `#[serde(default)]` in Rust — backend accepts uploads without baro data
+- Session detail page is a top-level GoRouter route (outside ShellRoute) so it has no bottom nav
+- Trajectory rendering = sensor magnitude charts for now; spatial path deferred to Phase 3 (PDR)
+- Commit style: `[#<issue>] - <message>` (dash after issue number)
 
 ---
 
