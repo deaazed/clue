@@ -11,7 +11,7 @@
 
     <!-- Background recording -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SENSOR" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <!-- Notification permission (Android 13+) -->
@@ -52,7 +52,7 @@
         <!-- flutter_foreground_task: keep recording alive in background -->
         <service
             android:name="com.pravera.flutter_foreground_task.service.ForegroundTaskService"
-            android:foregroundServiceType="sensor"
+            android:foregroundServiceType="dataSync"
             android:exported="false" />
     </application>
     <!-- Required to query activities that can process text, see:
