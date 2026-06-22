@@ -35,6 +35,9 @@ dependencies:
   # SVG rendering (logo in UI)
   flutter_svg: ^2.0.16
 
+  # GPS location snapshot on memory save
+  geolocator: ^13.0.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

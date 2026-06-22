@@ -31,7 +31,7 @@ class _LoggerPageState extends State<LoggerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Clue SL')),
+      appBar: AppBar(title: const Text('Clue')),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
