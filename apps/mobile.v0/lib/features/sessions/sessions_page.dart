@@ -149,13 +149,29 @@ class _SessionsPageState extends State<SessionsPage> {
       return RefreshIndicator(
         onRefresh: _load,
         child: ListView(
-          children: const [
-            SizedBox(height: 120),
+          children: [
+            const SizedBox(height: 80),
             Center(
-              child: Text(
-                'No sessions yet.\nRecord one on the Logger tab.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.black54),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.sensors_off,
+                      size: 72,
+                      color: Theme.of(context).colorScheme.outlineVariant),
+                  const SizedBox(height: 16),
+                  Text('No sessions yet',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Start a recording on the Logger tab\nto contribute a sensor session.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.outline),
+                  ),
+                ],
               ),
             ),
           ],
@@ -242,7 +258,8 @@ class _SessionTile extends StatelessWidget {
       child: Card(
         margin: EdgeInsets.zero,
         child: ListTile(
-          leading: const Icon(Icons.sensors, color: Colors.indigo),
+          leading: Icon(Icons.sensors,
+              color: Theme.of(context).colorScheme.primary),
           title: Text(dateStr,
               style: const TextStyle(fontFamily: 'monospace', fontSize: 13)),
           subtitle: Text('$durStr · ${session.sampleCount} samples'),

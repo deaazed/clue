@@ -34,3 +34,6 @@ jobs:
       - name: Test
         working-directory: apps/mobile.v0
         run: flutter test
+      - name: Build APK (debug)
+        working-directory: apps/mobile.v0
+        run: flutter build apk --debug

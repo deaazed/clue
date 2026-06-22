@@ -30,16 +30,16 @@ class _LoggerPageState extends State<LoggerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Clue - Sensor Logger')),
+      appBar: AppBar(title: const Text('Clue SL')),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _StatusRow(ctrl: _ctrl),
-              const SizedBox(height: 20),
               if (_ctrl.state == RecordingState.recording) ...[
+                _RecordingStatus(ctrl: _ctrl),
+                const SizedBox(height: 20),
                 _Vec3Tile('Accelerometer (m/s²)', _ctrl.lastAccel),
                 const SizedBox(height: 8),
                 _Vec3Tile('Gyroscope (rad/s)', _ctrl.lastGyro),
@@ -50,7 +50,13 @@ class _LoggerPageState extends State<LoggerPage> {
                 const SizedBox(height: 8),
                 _SampleCountRow(ctrl: _ctrl),
               ],
-              const Spacer(),
+              Expanded(
+                child: switch (_ctrl.state) {
+                  RecordingState.idle => const _IdleState(),
+                  RecordingState.saving => const _SavingState(),
+                  RecordingState.recording => const SizedBox.shrink(),
+                },
+              ),
               _ActionButton(ctrl: _ctrl),
             ],
           ),
@@ -60,42 +66,84 @@ class _LoggerPageState extends State<LoggerPage> {
   }
 }
 
-class _StatusRow extends StatelessWidget {
-  const _StatusRow({required this.ctrl});
+class _IdleState extends StatelessWidget {
+  const _IdleState();
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.outlineVariant;
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.sensors, size: 72, color: color),
+          const SizedBox(height: 16),
+          Text(
+            'Ready to record',
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Walk a route indoors to contribute\na sensor session to Clue.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(color: Theme.of(context).colorScheme.outline),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SavingState extends StatelessWidget {
+  const _SavingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox.square(
+            dimension: 40,
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text('Saving session…', style: TextStyle(fontSize: 16)),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecordingStatus extends StatelessWidget {
+  const _RecordingStatus({required this.ctrl});
   final LoggerController ctrl;
 
   @override
   Widget build(BuildContext context) {
-    return switch (ctrl.state) {
-      RecordingState.idle => const Text(
-          'Ready to record',
-          style: TextStyle(fontSize: 18, color: Colors.black54),
+    return Row(
+      children: [
+        _PulsingDot(),
+        const SizedBox(width: 10),
+        Text(
+          'REC  ${_fmt(ctrl.elapsedMs)}',
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1,
+          ),
         ),
-      RecordingState.recording => Row(
-          children: [
-            _PulsingDot(),
-            const SizedBox(width: 10),
-            Text(
-              'REC  ${_fmt(ctrl.elapsedMs)}',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1,
-              ),
-            ),
-          ],
-        ),
-      RecordingState.saving => const Row(
-          children: [
-            SizedBox.square(
-              dimension: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            SizedBox(width: 10),
-            Text('Saving session...', style: TextStyle(fontSize: 18)),
-          ],
-        ),
-    };
+      ],
+    );
   }
 
   String _fmt(int ms) {
@@ -119,10 +167,10 @@ class _Vec3Tile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(label,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black54)),
+                    color: Theme.of(context).colorScheme.outline)),
             const SizedBox(height: 4),
             Text(
               v == null
@@ -147,15 +195,19 @@ class _BleTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final n = ctrl.lastBle.length;
+    final primary = Theme.of(context).colorScheme.primary;
+    final outline = Theme.of(context).colorScheme.outline;
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
             Icon(
-              ctrl.bleAvailable ? Icons.bluetooth_searching : Icons.bluetooth_disabled,
+              ctrl.bleAvailable
+                  ? Icons.bluetooth_searching
+                  : Icons.bluetooth_disabled,
               size: 18,
-              color: ctrl.bleAvailable ? Colors.indigo : Colors.black38,
+              color: ctrl.bleAvailable ? primary : outline,
             ),
             const SizedBox(width: 8),
             Text(
@@ -169,6 +221,30 @@ class _BleTile extends StatelessWidget {
       ),
     );
   }
+}
+
+class _SampleCountRow extends StatelessWidget {
+  const _SampleCountRow({required this.ctrl});
+  final LoggerController ctrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.outline;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.data_usage, size: 14, color: color),
+        const SizedBox(width: 4),
+        Text(
+          '${_n(ctrl.accelCount)} accel  ·  ${_n(ctrl.gyroCount)} gyro  ·  ${_n(ctrl.magCount)} mag',
+          style: TextStyle(fontSize: 11, color: color),
+        ),
+      ],
+    );
+  }
+
+  String _n(int count) =>
+      count >= 1000 ? '${(count / 1000).toStringAsFixed(1)}k' : '$count';
 }
 
 class _ActionButton extends StatelessWidget {
@@ -203,38 +279,13 @@ class _ActionButton extends StatelessWidget {
             minimumSize: const Size.fromHeight(52),
           ),
         ),
-      RecordingState.saving => const FilledButton(
+      RecordingState.saving => FilledButton(
           onPressed: null,
-          child: SizedBox(
-            height: 52,
-            child: Center(child: Text('Saving...')),
-          ),
+          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+          child: const Text('Saving…'),
         ),
     };
   }
-}
-
-class _SampleCountRow extends StatelessWidget {
-  const _SampleCountRow({required this.ctrl});
-  final LoggerController ctrl;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.data_usage, size: 14, color: Colors.black38),
-        const SizedBox(width: 4),
-        Text(
-          '${_n(ctrl.accelCount)} accel  ·  ${_n(ctrl.gyroCount)} gyro  ·  ${_n(ctrl.magCount)} mag',
-          style: const TextStyle(fontSize: 11, color: Colors.black38),
-        ),
-      ],
-    );
-  }
-
-  String _n(int count) =>
-      count >= 1000 ? '${(count / 1000).toStringAsFixed(1)}k' : '$count';
 }
 
 class _PulsingDot extends StatefulWidget {
