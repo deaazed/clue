@@ -6,20 +6,33 @@
 
 ## What Is Clue
 
-Clue is a crowdsourced indoor localization system built by a solo engineer as a side project.
+Clue is a **personal indoor memory and discovery app** built by a solo engineer as a side project.
 
-Users contribute motion trajectories, raw sensor recordings, and indoor markers. The system learns indoor layouts over time and lets users locate items and points of interest inside buildings.
+Users save, search, and revisit indoor places and item locations — where they found the milk, where they parked, which gate to head to, which outlet was free. Clue remembers so the user doesn't have to.
 
-Examples: find milk in a supermarket, Gate B12 in an airport, a shop in a mall, a conference room in an office.
+Examples: milk on aisle 7, parking spot B3, Gate 42, quiet corner in the office, the power outlet by the window.
 
-Target localization accuracy: **2–5 meters**. Perfect positioning is not required.
+**Core user actions:** Save Memory · Search Memory · View Timeline · Return To Memory · Share Memory
+
+The app provides standalone value through fast memory capture and retrieval. In the background it silently records motion trajectories, BLE and Wi-Fi fingerprints, and sensor data to progressively build indoor maps and improve localization over time.
+
+**The user experience must remain valuable even if indoor localization is initially inaccurate.**
+
+Target localization accuracy (long-term): **2–5 meters**. Not required for the memory features to be useful.
 
 ---
 
 ## Core Philosophy
 
-Always prioritize in this order:
+**User experience first.** Every feature must have standalone value for the user before it generates data for the system.
 
+For the user-facing app, prioritize in this order:
+1. Fast capture
+2. Fast retrieval
+3. Daily usefulness
+4. Simplicity
+
+For the backend system, prioritize in this order:
 1. Data collection
 2. Visualization
 3. Reproducibility
@@ -28,6 +41,13 @@ Always prioritize in this order:
 Before AI, machine learning, or optimization.
 
 Never introduce machine learning until data collection, replay, visualization, and a baseline implementation exist.
+
+### Product positioning rules (non-negotiable)
+
+- **Never** present Clue as a sensor logger, localization research tool, or data collection platform in the UI
+- **Never** use technical terms in user-facing screens: no "session", "trajectory", "fingerprint", "IMU", "sensor"
+- **Never** expose sensor collection, recording state, or upload progress to users unless they are in a developer/debug mode
+- Every screen must answer: *what does this do for the user right now?*
 
 ---
 
@@ -70,9 +90,13 @@ clue/
 
 Repository: https://github.com/deaazed/clue
 
-**Active milestone: [CLUE - Sensor Logger (Clue SL)](https://github.com/deaazed/clue/milestone/1)** (due 2026-07-31)
+**Active milestone: [CLUE - Sensor Logger (Clue SL)](https://github.com/deaazed/clue/milestone/1)** (due 2026-07-31) — finishing deployment
 
-Issues: [#1](https://github.com/deaazed/clue/issues/1) ✅ · [#2](https://github.com/deaazed/clue/issues/2) ✅ · [#3](https://github.com/deaazed/clue/issues/3) ✅ · [#4](https://github.com/deaazed/clue/issues/4) ✅ · [#5 CI](https://github.com/deaazed/clue/issues/5) ✅ · [#6 Backend deploy](https://github.com/deaazed/clue/issues/6) · [#7 App deploy](https://github.com/deaazed/clue/issues/7) · [#8 Usability](https://github.com/deaazed/clue/issues/8) ✅
+**Next milestone: [Clue — Memory App MVP](https://github.com/deaazed/clue/milestone/2)** (due 2027-03-31) — user-facing memory features
+
+Milestone 1 issues: [#1](https://github.com/deaazed/clue/issues/1) ✅ · [#2](https://github.com/deaazed/clue/issues/2) ✅ · [#3](https://github.com/deaazed/clue/issues/3) ✅ · [#4](https://github.com/deaazed/clue/issues/4) ✅ · [#5 CI](https://github.com/deaazed/clue/issues/5) ✅ · [#6 Backend deploy](https://github.com/deaazed/clue/issues/6) · [#7 App deploy](https://github.com/deaazed/clue/issues/7) · [#8 Usability](https://github.com/deaazed/clue/issues/8) ✅
+
+Milestone 2 issues: [#9 Vision](https://github.com/deaazed/clue/issues/9) · [#10 Save Memory](https://github.com/deaazed/clue/issues/10) · [#11 Timeline](https://github.com/deaazed/clue/issues/11) · [#12 Search](https://github.com/deaazed/clue/issues/12) · [#13 Return](https://github.com/deaazed/clue/issues/13) · [#14 Share](https://github.com/deaazed/clue/issues/14)
 
 ---
 
@@ -218,6 +242,8 @@ Working from `apps/mobile.v0` (package `clue_sl`):
 - Session detail page is a top-level GoRouter route (outside ShellRoute) so it has no bottom nav
 - Trajectory rendering = sensor magnitude charts for now; spatial path deferred to Phase 3 (PDR)
 - Commit style: `[#<issue>] - <message>` (dash after issue number)
+- Product direction: personal indoor memory app — sensor data collected silently; never exposed in UI
+- Memory App MVP (#10–#14) starts after backend (#6) and app (#7) are deployed
 
 ---
 
@@ -233,9 +259,14 @@ Working from `apps/mobile.v0` (package `clue_sl`):
 - Visualize data before proposing new algorithms
 - Keep infrastructure under €20/month
 
-### Never (until 100+ sessions exist and replay + mapping work)
+### Never (in UI)
 
-- User accounts / social features / gamification
+- Research-oriented or technical terminology exposed to users
+- Sensor collection details, recording state, or upload progress visible to users
+- Gamification, complex social features
+
+### Never (in system, until 100+ sessions exist and replay + mapping work)
+
 - Deep learning / recommendation systems
 - Distributed systems
 - Premature optimization
