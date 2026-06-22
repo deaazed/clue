@@ -213,7 +213,7 @@ Raw Sensors → Features → Trajectories → Indoor Graph → Localization → 
 | Backend | Rust + Axum + Tokio |
 | Database | PostgreSQL |
 | Object storage | Cloudflare R2 or Hetzner local |
-| Hosting | Hetzner Cloud (~€8/month) |
+| Hosting | Hetzner CX23 (~€4.55/month incl. backups) |
 
 Budget constraint: **€15/month**, max €250/year.
 
