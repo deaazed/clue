@@ -2,12 +2,19 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import '../../models/session.dart';
 import '../../services/session_repository.dart';
+import '../../services/foreground_task.dart';
 
 enum RecordingState { idle, recording, saving }
 
 class LoggerController extends ChangeNotifier {
+  LoggerController() {
+    _initForegroundTask();
+  }
+
   RecordingState state = RecordingState.idle;
 
   Vec3? lastAccel;
@@ -18,7 +25,12 @@ class LoggerController extends ChangeNotifier {
 
   int _startMs = 0;
   int _elapsedMs = 0;
+  int _notifTick = 0;
   int get elapsedMs => _elapsedMs;
+
+  int get accelCount => _accel.length;
+  int get gyroCount => _gyro.length;
+  int get magCount => _mag.length;
 
   final List<AccelSample> _accel = [];
   final List<GyroSample> _gyro = [];
@@ -32,8 +44,28 @@ class LoggerController extends ChangeNotifier {
   Timer? _uiTimer;
   Timer? _bleScanTimer;
 
+  void _initForegroundTask() {
+    FlutterForegroundTask.init(
+      androidNotificationOptions: AndroidNotificationOptions(
+        channelId: 'clue_sl_recording',
+        channelName: 'Clue SL',
+        channelImportance: NotificationChannelImportance.LOW,
+        priority: NotificationPriority.LOW,
+      ),
+      iosNotificationOptions: const IOSNotificationOptions(
+        showNotification: false,
+      ),
+      foregroundTaskOptions: ForegroundTaskOptions(
+        eventAction: ForegroundTaskEventAction.nothing(),
+        autoRunOnBoot: false,
+      ),
+    );
+  }
+
   Future<void> start() async {
     if (state != RecordingState.idle) return;
+
+    await _requestPermissions();
 
     _startMs = DateTime.now().millisecondsSinceEpoch;
     _accel.clear();
@@ -44,6 +76,7 @@ class LoggerController extends ChangeNotifier {
     lastGyro = null;
     lastMag = null;
     lastBle = [];
+    _notifTick = 0;
 
     state = RecordingState.recording;
     notifyListeners();
@@ -71,11 +104,50 @@ class LoggerController extends ChangeNotifier {
 
     await _initBle();
 
+    await FlutterForegroundTask.startService(
+      serviceId: 1001,
+      notificationTitle: 'Clue SL',
+      notificationText: 'Recording — 00:00 elapsed',
+      notificationButtons: [
+        const NotificationButton(id: 'btn_stop', text: 'Stop'),
+      ],
+      callback: foregroundEntryPoint,
+    );
+    FlutterForegroundTask.addTaskDataCallback(_onTaskData);
+
     // UI updates at 10 Hz — sensor data accumulates independently at 20 Hz
     _uiTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
       _elapsedMs = DateTime.now().millisecondsSinceEpoch - _startMs;
       notifyListeners();
+      // Update notification text once per second (every 10 ticks)
+      if (++_notifTick >= 10) {
+        _notifTick = 0;
+        FlutterForegroundTask.updateService(
+          notificationText: 'Recording — ${_fmtMs(_elapsedMs)} elapsed',
+        );
+      }
     });
+  }
+
+  Future<void> _requestPermissions() async {
+    await [
+      Permission.locationWhenInUse,
+      Permission.bluetoothScan,
+      Permission.bluetoothConnect,
+      Permission.notification,
+    ].request();
+  }
+
+  void _onTaskData(Object data) {
+    if (data == 'stop' && state == RecordingState.recording) {
+      stop();
+    }
+  }
+
+  String _fmtMs(int ms) {
+    final s = ms ~/ 1000;
+    final m = s ~/ 60;
+    return '${m.toString().padLeft(2, '0')}:${(s % 60).toString().padLeft(2, '0')}';
   }
 
   Future<void> _initBle() async {
@@ -129,6 +201,9 @@ class LoggerController extends ChangeNotifier {
     try {
       await FlutterBluePlus.stopScan();
     } catch (_) {}
+
+    FlutterForegroundTask.removeTaskDataCallback(_onTaskData);
+    await FlutterForegroundTask.stopService();
 
     final session = Session(
       id: _startMs.toString(),

@@ -28,7 +28,41 @@ class _SessionsPageState extends State<SessionsPage> {
 
   Future<void> _load() async {
     final sessions = await SessionRepository.loadAll();
-    if (mounted) setState(() => _sessions = sessions);
+    if (!mounted) return;
+    setState(() => _sessions = sessions);
+    _checkUploadReminder(sessions);
+  }
+
+  void _checkUploadReminder(List<Session> sessions) {
+    const fiveMin = 5 * 60 * 1000;
+    final longPending = sessions.where((s) => s.durationMs >= fiveMin).length;
+    if (longPending == 0) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showMaterialBanner(
+        MaterialBanner(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          content: Text(
+            '$longPending long session${longPending > 1 ? 's are' : ' is'} pending upload',
+          ),
+          leading: const Icon(Icons.cloud_upload, color: Colors.indigo),
+          actions: [
+            TextButton(
+              onPressed: () {
+                ScaffoldMessenger.of(context).clearMaterialBanners();
+                _uploadAll();
+              },
+              child: const Text('Upload All'),
+            ),
+            TextButton(
+              onPressed: () =>
+                  ScaffoldMessenger.of(context).clearMaterialBanners(),
+              child: const Text('Dismiss'),
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   bool get _isUploading =>

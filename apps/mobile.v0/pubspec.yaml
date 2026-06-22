@@ -26,6 +26,12 @@ dependencies:
   # Backend upload
   http: ^1.2.0
 
+  # Runtime permissions (location + BLE + notifications)
+  permission_handler: ^11.3.1
+
+  # Background recording — keeps app alive + persistent notification
+  flutter_foreground_task: ^8.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -30,7 +30,7 @@ class _LoggerPageState extends State<LoggerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sensor Logger')),
+      appBar: AppBar(title: const Text('Clue - Sensor Logger')),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -47,6 +47,8 @@ class _LoggerPageState extends State<LoggerPage> {
                 _Vec3Tile('Magnetometer (µT)', _ctrl.lastMag),
                 const SizedBox(height: 8),
                 _BleTile(ctrl: _ctrl),
+                const SizedBox(height: 8),
+                _SampleCountRow(ctrl: _ctrl),
               ],
               const Spacer(),
               _ActionButton(ctrl: _ctrl),
@@ -210,6 +212,29 @@ class _ActionButton extends StatelessWidget {
         ),
     };
   }
+}
+
+class _SampleCountRow extends StatelessWidget {
+  const _SampleCountRow({required this.ctrl});
+  final LoggerController ctrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.data_usage, size: 14, color: Colors.black38),
+        const SizedBox(width: 4),
+        Text(
+          '${_n(ctrl.accelCount)} accel  ·  ${_n(ctrl.gyroCount)} gyro  ·  ${_n(ctrl.magCount)} mag',
+          style: const TextStyle(fontSize: 11, color: Colors.black38),
+        ),
+      ],
+    );
+  }
+
+  String _n(int count) =>
+      count >= 1000 ? '${(count / 1000).toStringAsFixed(1)}k' : '$count';
 }
 
 class _PulsingDot extends StatefulWidget {
