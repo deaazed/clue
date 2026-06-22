@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  rust:
+    name: Rust — test workspace
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --workspace
+
+  flutter:
+    name: Flutter — analyze & test (mobile.v0)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        working-directory: apps/mobile.v0
+        run: flutter pub get
+      - name: Analyze
+        working-directory: apps/mobile.v0
+        run: flutter analyze --no-fatal-infos
+      - name: Test
+        working-directory: apps/mobile.v0
+        run: flutter test
