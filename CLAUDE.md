@@ -72,13 +72,13 @@ Repository: https://github.com/deaazed/clue
 
 **Active milestone: [CLUE - Sensor Logger (Clue SL)](https://github.com/deaazed/clue/milestone/1)** (due 2026-07-31)
 
-Issues: [#1](https://github.com/deaazed/clue/issues/1) ✅ · [#2](https://github.com/deaazed/clue/issues/2) ✅ · [#3](https://github.com/deaazed/clue/issues/3) ✅ · [#4](https://github.com/deaazed/clue/issues/4) ✅ · [#5 CI](https://github.com/deaazed/clue/issues/5) · [#6 Backend deploy](https://github.com/deaazed/clue/issues/6) · [#7 App deploy](https://github.com/deaazed/clue/issues/7) · [#8 Usability](https://github.com/deaazed/clue/issues/8)
+Issues: [#1](https://github.com/deaazed/clue/issues/1) ✅ · [#2](https://github.com/deaazed/clue/issues/2) ✅ · [#3](https://github.com/deaazed/clue/issues/3) ✅ · [#4](https://github.com/deaazed/clue/issues/4) ✅ · [#5 CI](https://github.com/deaazed/clue/issues/5) ✅ · [#6 Backend deploy](https://github.com/deaazed/clue/issues/6) · [#7 App deploy](https://github.com/deaazed/clue/issues/7) · [#8 Usability](https://github.com/deaazed/clue/issues/8) ✅
 
 ---
 
-## Current State (as of 2026-06-19)
+## Current State (as of 2026-06-22)
 
-**Current phase:** Phase 1 — Sensor Logger. Issues #1–#4 closed. Open: #5 CI, #6 Backend deployment, #7 App deployment, #8 Usability enhancements.
+**Current phase:** Phase 1 — Sensor Logger. Issues #1–#5 and #8 closed. Open: #6 Backend deployment, #7 App deployment.
 
 ### apps/mobile — map/home prototype
 
@@ -111,11 +111,12 @@ Package: `clue_sl` · Org: `com.clue` · Android + iOS only
 | `lib/services/api_client.dart` | `ApiClient.uploadSession()` — POST /api/sessions, 30 s timeout |
 | `lib/features/logger/logger_controller.dart` | ChangeNotifier — start/stop, IMU streams, BLE scan loop |
 | `lib/features/logger/logger_page.dart` | Record/stop UI + live sensor readout + elapsed timer |
-| `lib/features/sessions/sessions_page.dart` | Session list, per-tile upload icon, Upload All button with slide-out animation |
+| `lib/services/foreground_task.dart` | `foregroundEntryPoint` + `_RecordingTaskHandler` — runs in foreground service isolate |
+| `lib/features/sessions/sessions_page.dart` | Session list, per-tile upload icon, Upload All button, upload reminder MaterialBanner |
 | `lib/features/session_detail/session_detail_page.dart` | Replay tab (scrubber + live values) + Charts tab (magnitude line charts) |
-| `android/app/src/main/AndroidManifest.xml` | Location + BLE permissions declared |
+| `android/app/src/main/AndroidManifest.xml` | Location + BLE + foreground service permissions + ForegroundTaskService |
 
-Dependencies: `go_router`, `sensors_plus`, `flutter_blue_plus`, `path_provider`, `http`
+Dependencies: `go_router`, `sensors_plus`, `flutter_blue_plus`, `path_provider`, `http`, `permission_handler`, `flutter_foreground_task`
 
 Sensor recording design:
 - IMU at 20 Hz (50 ms period) via `sensors_plus` — accel, gyro, mag
@@ -134,6 +135,13 @@ Session detail (issue #3):
 - **Replay tab**: MM:SS.t timer, scrubber slider, play/pause (100 ms ticks), binary-search sample lookup, live accel/gyro/mag/BLE tiles
 - **Charts tab**: accel / gyro / mag magnitude (√x²+y²+z²) over time, drawn with `CustomPainter` (no extra dep)
 
+Usability (issue #8):
+- **Permissions**: `permission_handler` requests location + BLE scan/connect + notifications on first recording
+- **Foreground service**: `flutter_foreground_task` keeps recording alive when app is backgrounded; persistent notification shows elapsed time + Stop action button
+- **Notification Stop button**: handled via `_RecordingTaskHandler.onNotificationButtonPressed` → `sendDataToMain('stop')` → `LoggerController._onTaskData` calls `stop()`
+- **Upload reminder**: `MaterialBanner` shown on Sessions page if any session > 5 min is pending upload
+- **Live sample count**: `accelCount` / `gyroCount` / `magCount` getters on `LoggerController`, shown as a compact row during recording
+
 ### Infrastructure
 
 - Mono-repo structure in place: `apps/`, `crates/`, `backend/`, `data/`
@@ -151,7 +159,7 @@ Session detail (issue #3):
 | Phase | Name | Duration | Status |
 |-------|------|----------|--------|
 | 0 | Project Setup | 1 week | **Done** |
-| 1 | Sensor Logger | 2 weeks | **In progress** (core done, pending: CI, deploy, usability) |
+| 1 | Sensor Logger | 2 weeks | **In progress** (core done, pending: deploy #6 #7) |
 | 2 | Replay System | 2 weeks | Not started |
 | 3 | Dead Reckoning | 4 weeks | Not started |
 | 4 | Indoor Visualization | 2 weeks | Not started |

@@ -2,7 +2,7 @@
 
 *Update this file at the end of each work session or after any significant structural change.*
 
-Last updated: 2026-06-19 (end of session)
+Last updated: 2026-06-22 (end of session)
 
 ---
 
@@ -10,7 +10,7 @@ Last updated: 2026-06-19 (end of session)
 
 **Phase 1 — Sensor Logger** (in progress)
 
-Issues #1–#4 closed. Open: #5 CI, #6 Backend deployment, #7 App deployment, #8 Usability enhancements.
+Issues #1–#5 and #8 closed. Open: #6 Backend deployment, #7 App deployment.
 
 ---
 
@@ -34,8 +34,8 @@ Issues #1–#4 closed. Open: #5 CI, #6 Backend deployment, #7 App deployment, #8
 | Visualization | Session replay | ✅ Done |
 | Visualization | Trajectory rendering | ✅ Done |
 | Session upload | Upload to backend | ✅ Done (#4) |
-| Usability | Background running + notifications + permissions + UI | Not started (#8) |
-| Deployment | CI setup | Not started (#5) |
+| Usability | Background running + notifications + permissions + UI | ✅ Done (#8) |
+| Deployment | CI setup | ✅ Done (#5) |
 | Deployment | Backend (Hetzner) | Not started (#6) |
 | Deployment | mobile.v0 (APK / Play Store) | Not started (#7) |
 
@@ -107,12 +107,21 @@ lib/
     └── session_detail/session_detail_page.dart  # Replay tab + Charts tab
 ```
 
-Dependencies: `go_router`, `sensors_plus`, `flutter_blue_plus`, `path_provider`, `http`
+Dependencies: `go_router`, `sensors_plus`, `flutter_blue_plus`, `path_provider`, `http`, `permission_handler`, `flutter_foreground_task`
 
 AndroidManifest permissions:
 - `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`
 - `BLUETOOTH`, `BLUETOOTH_ADMIN` (≤API 30)
 - `BLUETOOTH_SCAN`, `BLUETOOTH_CONNECT` (API 31+)
+- `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SENSOR`, `WAKE_LOCK`
+- `POST_NOTIFICATIONS` (Android 13+)
+
+Usability features (#8):
+- Runtime permission request on first record via `permission_handler`
+- Foreground service via `flutter_foreground_task` — keeps recording alive in background, shows persistent notification with elapsed time and Stop button
+- Stop button sends `'stop'` via inter-isolate channel → `LoggerController._onTaskData` calls `stop()`
+- Upload reminder MaterialBanner on Sessions page for sessions > 5 min
+- Live sample count row on Logger page during recording
 
 VS Code launch configs: `clue SL (debug/profile/release)` — `cwd: apps/mobile.v0`
 
