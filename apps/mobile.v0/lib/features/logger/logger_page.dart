@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../models/session.dart';
 import 'logger_controller.dart';
 
@@ -76,7 +77,12 @@ class _IdleState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.sensors, size: 72, color: color),
+          SvgPicture.asset(
+            'assets/logo-clue.svg',
+            width: 80,
+            height: 80,
+            colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+          ),
           const SizedBox(height: 16),
           Text(
             'Ready to record',

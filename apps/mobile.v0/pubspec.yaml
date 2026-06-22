@@ -32,10 +32,24 @@ dependencies:
   # Background recording — keeps app alive + persistent notification
   flutter_foreground_task: ^8.0.0
 
+  # SVG rendering (logo in UI)
+  flutter_svg: ^2.0.16
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.0
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: false
+  image_path: "assets/logo-clue-icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#3F51B5"
+  adaptive_icon_foreground: "assets/logo-clue-foreground.png"
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/
