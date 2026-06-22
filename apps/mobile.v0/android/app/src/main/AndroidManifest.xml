@@ -17,8 +17,11 @@
     <!-- Notification permission (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Network access for map tiles and backend upload -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
-        android:label="clue_sl"
+        android:label="Clue"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity
@@ -64,6 +67,15 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- url_launcher: open Google Maps and https links -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="geo" />
         </intent>
     </queries>
 </manifest>

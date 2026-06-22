@@ -6,6 +6,8 @@ import 'features/search/search_page.dart';
 import 'features/logger/logger_page.dart';
 import 'features/sessions/sessions_page.dart';
 import 'features/session_detail/session_detail_page.dart';
+import 'features/memory_detail/memory_detail_page.dart';
+import 'models/memory.dart';
 import 'models/session.dart';
 
 final _router = GoRouter(
@@ -38,6 +40,11 @@ final _router = GoRouter(
       ],
     ),
     GoRoute(
+      path: '/memory',
+      builder: (context, state) =>
+          MemoryDetailPage(memory: state.extra as Memory),
+    ),
+    GoRoute(
       path: '/sessions/:id',
       builder: (context, state) =>
           SessionDetailPage(session: state.extra as Session),
@@ -54,7 +61,9 @@ class ClueApp extends StatelessWidget {
       title: 'Clue',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF7C3AED),
+        ),
         useMaterial3: true,
       ),
       routerConfig: _router,

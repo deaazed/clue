@@ -38,6 +38,13 @@ dependencies:
   # GPS location snapshot on memory save
   geolocator: ^13.0.1
 
+  # Map display in memory detail
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.0
+
+  # Open native maps app
+  url_launcher: ^6.3.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

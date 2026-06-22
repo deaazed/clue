@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../models/memory.dart';
 import '../../services/memory_repository.dart';
-import '../home/home_page.dart' show memoryIcon;
+import '../../widgets/memory_card.dart';
 
 class TimelinePage extends StatefulWidget {
   const TimelinePage({super.key});
@@ -61,72 +62,45 @@ class _TimelinePageState extends State<TimelinePage> {
                         direction: DismissDirection.endToStart,
                         background: Container(
                           alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          color: cs.errorContainer,
+                          padding: const EdgeInsets.only(right: 24),
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: cs.errorContainer,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                           child: Icon(Icons.delete_outline, color: cs.error),
                         ),
                         confirmDismiss: (_) => showDialog<bool>(
                           context: context,
                           builder: (ctx) => AlertDialog(
                             title: const Text('Delete memory?'),
-                            content: Text('"${m.label}" will be removed.'),
+                            content:
+                                Text('"${m.label}" will be removed.'),
                             actions: [
                               TextButton(
-                                onPressed: () => Navigator.pop(ctx, false),
+                                onPressed: () =>
+                                    Navigator.pop(ctx, false),
                                 child: const Text('Cancel'),
                               ),
                               TextButton(
-                                onPressed: () => Navigator.pop(ctx, true),
+                                onPressed: () =>
+                                    Navigator.pop(ctx, true),
                                 child: const Text('Delete'),
                               ),
                             ],
                           ),
                         ),
                         onDismissed: (_) => _delete(m.id),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: cs.primaryContainer,
-                            child: Icon(memoryIcon(m.iconType),
-                                color: cs.primary, size: 20),
-                          ),
-                          title: Text(m.label,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w500)),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (m.note != null)
-                                Text(m.note!,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                        color: cs.onSurfaceVariant)),
-                              Text(
-                                _formatTime(m.timestamp),
-                                style: TextStyle(
-                                    fontSize: 12, color: cs.outline),
-                              ),
-                            ],
-                          ),
-                          isThreeLine: m.note != null,
+                        child: MemoryCard(
+                          memory: m,
+                          onTap: () =>
+                              context.push('/memory', extra: m),
                         ),
                       );
                     },
                   ),
                 ),
     );
-  }
-
-  String _formatTime(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 1) return 'just now';
-    if (diff.inHours < 1) return '${diff.inMinutes} min ago';
-    if (diff.inDays < 1) {
-      final h = dt.hour.toString().padLeft(2, '0');
-      final m = dt.minute.toString().padLeft(2, '0');
-      return 'Today at $h:$m';
-    }
-    if (diff.inDays < 7) return '${diff.inDays} days ago';
-    return '${dt.day}/${dt.month}/${dt.year}';
   }
 }

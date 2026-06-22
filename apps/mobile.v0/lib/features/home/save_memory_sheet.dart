@@ -4,7 +4,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../models/memory.dart';
 import '../../services/memory_repository.dart';
-import 'home_page.dart' show memoryIcon;
+import '../../widgets/memory_card.dart' show memoryIcon;
 
 const _iconTypes = [
   'item',

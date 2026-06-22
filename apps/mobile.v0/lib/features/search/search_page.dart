@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../models/memory.dart';
 import '../../services/memory_repository.dart';
-import '../home/home_page.dart' show memoryIcon;
+import '../../widgets/memory_card.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -82,31 +83,19 @@ class _SearchPageState extends State<SearchPage> {
                           size: 48, color: cs.outlineVariant),
                       const SizedBox(height: 8),
                       Text('Nothing found for "$q"',
-                          style: TextStyle(color: cs.onSurfaceVariant)),
+                          style:
+                              TextStyle(color: cs.onSurfaceVariant)),
                     ],
                   ),
                 )
               : ListView.builder(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   itemCount: _results.length,
-                  itemBuilder: (context, i) {
-                    final m = _results[i];
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: cs.primaryContainer,
-                        child: Icon(memoryIcon(m.iconType),
-                            color: cs.primary, size: 20),
-                      ),
-                      title: Text(m.label,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w500)),
-                      subtitle: m.note != null
-                          ? Text(m.note!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis)
-                          : null,
-                    );
-                  },
+                  itemBuilder: (context, i) => MemoryCard(
+                    memory: _results[i],
+                    onTap: () =>
+                        context.push('/memory', extra: _results[i]),
+                  ),
                 ),
     );
   }
