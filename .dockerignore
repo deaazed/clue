@@ -1,0 +1,21 @@
+# Flutter apps — not needed for backend build
+apps/
+
+# Docs, data, scripts
+docs/
+data/
+
+# Git history
+.git/
+
+# Rust build artifacts (built fresh inside Docker)
+target/
+
+# Secrets
+.env
+.env.local
+
+# Editor
+.vscode/
+.idea/
+*.iml
