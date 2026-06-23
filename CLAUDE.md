@@ -245,6 +245,7 @@ Budget constraint: **€15/month**, max €250/year.
 - CARTO Positron (light) + Dark Matter (dark) tiles — no API key, subdomains a/b/c/d
 - Share feature uses `share_plus` v10 API: `Share.share(text)` (not ShareParams, which is v11+)
 - Multilanguage deferred to a future milestone
+- Indoor map (#16): self-hosted PMTiles on VPS via Caddy static file + byte-range. Mapbox rejected (external dependency, API key). MapCache rejected (caching proxy only, doesn't add zoom or indoor data). MapServer rejected (heavy OGC stack, overkill). PMTiles uses same OSM indoor data as Mapbox, keeps flutter_map, zero running cost, Phase 4 floor plan overlays served from same VPS
 
 ---
 
