@@ -100,9 +100,20 @@ Milestone 2 issues: [#9 Vision](https://github.com/deaazed/clue/issues/9) · [#1
 
 ---
 
-## Current State (as of 2026-06-22)
+## Current State (as of 2026-06-23)
 
-**Current phase:** Phase 1 — Sensor Logger. Issues #1–#5 and #8 closed. Open: #6 Backend deployment, #7 App deployment.
+**Current phase:** Phase 2 — Memory App MVP. Milestone 1 fully closed. Issues #9–#13 closed. Open: #14 Share Memory.
+
+### Known bugs to fix next session
+
+- **GPS not saving on Save Memory**: `getLastKnownPosition()` with ≤150m/≤15min threshold is too strict. Most devices fail it so `lat`/`lng` stay null. Fix: fall back to `getCurrentPosition()` with ~5s timeout if last known fails.
+- **No locate-me button on home map**: button is hidden when `_userPosition == null` (which happens when GPS fails). Fix: always show the button, trigger location fetch on tap.
+- **Map style disliked by user**: user doesn't like the current OSM map look. Discuss style direction next session (CartoDB Voyager tiles? Dark tiles? Different style?).
+
+### CD workflow
+
+- GitHub Actions deploy on push to master (backend paths only) → SSH → `git pull` → `docker compose up --build -d` → health check
+- Secrets required: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` ✅ added
 
 ### apps/mobile — map/home prototype
 
@@ -175,6 +186,9 @@ Usability (issue #8):
 - `backend/` is a real Axum server: health check + session CRUD, SQLx + PostgreSQL, auto-migrations
 - Rust installed (GNU toolchain `x86_64-pc-windows-gnu`). Run `cargo build` from the repo root.
 - PostgreSQL database installed. Ran `cargo run -p backend` from the repo root and ran `Invoke-RestMethod http://localhost:3000/health` resulting `ok`.
+- **VPS**: Hetzner CX23, Helsinki (hel1). IPv4: `37.27.255.248`. SSH via `static.248.255.27.37.clients.your-server.de` (direct IP SSH didn't work but hostname does). Ubuntu 24.04 LTS.
+- **Docker**: `Dockerfile` + `docker-compose.yml` at repo root. Multi-stage Rust build + postgres:16-alpine. BuildKit cache mounts for fast rebuilds.
+- `docker compose up --build` running on server as of 2026-06-23 (first build in progress — slow, compiles Rust from scratch).
 
 ---
 
