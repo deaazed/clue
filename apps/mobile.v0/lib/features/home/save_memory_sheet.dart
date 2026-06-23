@@ -4,25 +4,14 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../models/memory.dart';
 import '../../services/memory_repository.dart';
+import '../../theme/spacing.dart';
 import '../../widgets/memory_card.dart' show memoryIcon;
 
 const _iconTypes = [
-  'item',
-  'place',
-  'parking',
-  'gate',
-  'outlet',
-  'restroom',
-  'other',
+  'item', 'place', 'parking', 'gate', 'outlet', 'restroom', 'other',
 ];
 const _iconLabels = [
-  'Item',
-  'Place',
-  'Parking',
-  'Gate',
-  'Outlet',
-  'Restroom',
-  'Other',
+  'Item', 'Place', 'Parking', 'Gate', 'Outlet', 'Restroom', 'Other',
 ];
 
 class SaveMemorySheet extends StatefulWidget {
@@ -53,7 +42,6 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
         final age = DateTime.now().difference(last.timestamp);
         if (age.inMinutes <= 15) return last;
       }
-      // Last known was missing or stale — get a fresh fix
       return await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.medium,
@@ -70,16 +58,19 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
     StreamSubscription? sub;
     try {
       sub = FlutterBluePlus.scanResults.listen((results) {
-        for (final r in results) { devices.add(r.device.remoteId.str); }
+        for (final r in results) {
+          devices.add(r.device.remoteId.str);
+        }
       });
       await FlutterBluePlus.startScan(
           timeout: const Duration(milliseconds: 1500));
       await Future.delayed(const Duration(milliseconds: 1500));
     } catch (_) {
-      // BLE unavailable or permissions not yet granted — save without it
     } finally {
       await sub?.cancel();
-      try { await FlutterBluePlus.stopScan(); } catch (_) {}
+      try {
+        await FlutterBluePlus.stopScan();
+      } catch (_) {}
     }
     return devices.toList();
   }
@@ -120,42 +111,29 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
     final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        left: AppSpacing.lg,
+        right: AppSpacing.lg,
+        top: AppSpacing.md,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: cs.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
           Text(
             'Save Memory',
             style: Theme.of(context)
                 .textTheme
                 .titleLarge
-                ?.copyWith(fontWeight: FontWeight.w600),
+                ?.copyWith(fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: 20),
-          // Icon picker
+          const SizedBox(height: AppSpacing.lg),
           SizedBox(
-            height: 60,
+            height: 62,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: _iconTypes.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
               itemBuilder: (context, i) {
                 final type = _iconTypes[i];
                 final selected = _selectedIcon == type;
@@ -164,12 +142,13 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 8),
+                        horizontal: AppSpacing.md - 2, vertical: AppSpacing.sm),
                     decoration: BoxDecoration(
                       color: selected
                           ? cs.primaryContainer
                           : cs.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius:
+                          BorderRadius.circular(AppSpacing.iconRadius),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -179,13 +158,16 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
                           size: 20,
                           color: selected ? cs.primary : cs.onSurfaceVariant,
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 3),
                         Text(
                           _iconLabels[i],
                           style: TextStyle(
                             fontSize: 10,
                             color:
                                 selected ? cs.primary : cs.onSurfaceVariant,
+                            fontWeight: selected
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                           ),
                         ),
                       ],
@@ -195,7 +177,7 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
               },
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.md),
           TextField(
             controller: _labelCtrl,
             autofocus: true,
@@ -207,7 +189,7 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
             ),
             onSubmitted: (_) => _save(),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.sm + 4),
           TextField(
             controller: _noteCtrl,
             textCapitalization: TextCapitalization.sentences,
@@ -216,7 +198,7 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
               border: OutlineInputBorder(),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.lg),
           SizedBox(
             width: double.infinity,
             child: FilledButton(

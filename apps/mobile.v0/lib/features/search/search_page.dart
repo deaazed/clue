@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/memory.dart';
 import '../../services/memory_repository.dart';
+import '../../theme/spacing.dart';
 import '../../widgets/memory_card.dart';
 
 class SearchPage extends StatefulWidget {
@@ -13,48 +14,56 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   List<Memory> _all = [];
-  List<Memory> _results = [];
-  final _queryCtrl = TextEditingController();
+  String _query = '';
+  final _ctrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadAll();
-    _queryCtrl.addListener(_filter);
+    _ctrl.addListener(() {
+      setState(() => _query = _ctrl.text.toLowerCase().trim());
+    });
   }
 
   @override
   void dispose() {
-    _queryCtrl.dispose();
+    _ctrl.dispose();
     super.dispose();
   }
 
   Future<void> _loadAll() async {
     final all = await MemoryRepository.loadAll();
-    if (mounted) setState(() => _all = all);
+    if (mounted) {
+      setState(() {
+        _all = all..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      });
+    }
   }
 
-  void _filter() {
-    final q = _queryCtrl.text.toLowerCase().trim();
-    setState(() {
-      _results = q.isEmpty
-          ? []
-          : _all
-              .where((m) =>
-                  m.label.toLowerCase().contains(q) ||
-                  (m.note?.toLowerCase().contains(q) ?? false))
-              .toList();
-    });
-  }
+  List<Memory> get _filtered => _query.isEmpty
+      ? _all
+      : _all
+          .where((m) =>
+              m.label.toLowerCase().contains(_query) ||
+              (m.note?.toLowerCase().contains(_query) ?? false))
+          .toList();
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final q = _queryCtrl.text.trim();
+    final filtered = _filtered;
+
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
         title: TextField(
-          controller: _queryCtrl,
+          controller: _ctrl,
+          autofocus: true,
+          textCapitalization: TextCapitalization.sentences,
           decoration: InputDecoration(
             hintText: 'Search memories…',
             border: InputBorder.none,
@@ -62,41 +71,54 @@ class _SearchPageState extends State<SearchPage> {
           ),
         ),
         actions: [
-          if (q.isNotEmpty)
+          if (_query.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.clear),
-              onPressed: () => _queryCtrl.clear(),
+              onPressed: () => _ctrl.clear(),
             ),
         ],
       ),
-      body: q.isEmpty
-          ? Center(
-              child: Text('Start typing to search',
-                  style: TextStyle(color: cs.onSurfaceVariant)),
-            )
-          : _results.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.search_off,
-                          size: 48, color: cs.outlineVariant),
-                      const SizedBox(height: 8),
-                      Text('Nothing found for "$q"',
-                          style:
-                              TextStyle(color: cs.onSurfaceVariant)),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: _results.length,
-                  itemBuilder: (context, i) => MemoryCard(
-                    memory: _results[i],
-                    onTap: () =>
-                        context.push('/memory', extra: _results[i]),
-                  ),
-                ),
+      body: filtered.isEmpty
+          ? _EmptySearch(query: _query, cs: cs)
+          : ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              itemCount: filtered.length,
+              itemBuilder: (_, i) => MemoryCard(
+                memory: filtered[i],
+                onTap: () => context.push('/memory', extra: filtered[i]),
+              ),
+            ),
+    );
+  }
+}
+
+class _EmptySearch extends StatelessWidget {
+  const _EmptySearch({required this.query, required this.cs});
+  final String query;
+  final ColorScheme cs;
+
+  @override
+  Widget build(BuildContext context) {
+    if (query.isEmpty) {
+      return Center(
+        child: Text(
+          'Start typing to search',
+          style: TextStyle(color: cs.onSurfaceVariant),
+        ),
+      );
+    }
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.search_off, size: 48, color: cs.outlineVariant),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Nothing found for "$query"',
+            style: TextStyle(color: cs.onSurfaceVariant),
+          ),
+        ],
+      ),
     );
   }
 }

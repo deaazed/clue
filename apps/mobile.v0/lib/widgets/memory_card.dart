@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/memory.dart';
+import '../theme/spacing.dart';
 
 IconData memoryIcon(String type) => switch (type) {
       'item' => Icons.inventory_2_outlined,
@@ -12,13 +13,13 @@ IconData memoryIcon(String type) => switch (type) {
     };
 
 Color memoryColor(String type) => switch (type) {
-      'item' => const Color(0xFFF59E0B),      // amber
-      'place' => const Color(0xFF10B981),     // emerald
-      'parking' => const Color(0xFF3B82F6),   // blue
-      'gate' => const Color(0xFFF97316),      // orange
-      'outlet' => const Color(0xFFEAB308),    // yellow
-      'restroom' => const Color(0xFF8B5CF6),  // violet
-      _ => const Color(0xFF6B7280),           // gray
+      'item' => const Color(0xFFF59E0B),
+      'place' => const Color(0xFF10B981),
+      'parking' => const Color(0xFF3B82F6),
+      'gate' => const Color(0xFFF97316),
+      'outlet' => const Color(0xFFEAB308),
+      'restroom' => const Color(0xFF8B5CF6),
+      _ => const Color(0xFF6B7280),
     };
 
 class MemoryCard extends StatelessWidget {
@@ -33,28 +34,33 @@ class MemoryCard extends StatelessWidget {
     final color = memoryColor(memory.iconType);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.xs),
       child: Material(
         color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppSpacing.sm + 4),
             child: Row(
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(11),
+                Hero(
+                  tag: 'memory_icon_${memory.id}',
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.15),
+                      borderRadius:
+                          BorderRadius.circular(AppSpacing.iconRadius),
+                    ),
+                    child: Icon(memoryIcon(memory.iconType),
+                        color: color, size: 22),
                   ),
-                  child: Icon(memoryIcon(memory.iconType),
-                      color: color, size: 22),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.sm + 4),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,7 +80,7 @@ class MemoryCard extends StatelessWidget {
                               color: cs.onSurfaceVariant, fontSize: 13),
                         ),
                       ],
-                      const SizedBox(height: 5),
+                      const SizedBox(height: AppSpacing.xs + 1),
                       Row(
                         children: [
                           if (memory.lat != null) ...[
@@ -88,7 +94,7 @@ class MemoryCard extends StatelessWidget {
                                   color: cs.primary,
                                   fontWeight: FontWeight.w500),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: AppSpacing.sm),
                           ],
                           Text(
                             _timeLabel(memory.timestamp),
@@ -100,8 +106,9 @@ class MemoryCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 4),
-                Icon(Icons.chevron_right, color: cs.outlineVariant, size: 18),
+                const SizedBox(width: AppSpacing.xs),
+                Icon(Icons.chevron_right,
+                    color: cs.outlineVariant, size: 18),
               ],
             ),
           ),

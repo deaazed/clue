@@ -9,6 +9,7 @@ import 'features/session_detail/session_detail_page.dart';
 import 'features/memory_detail/memory_detail_page.dart';
 import 'models/memory.dart';
 import 'models/session.dart';
+import 'theme/spacing.dart';
 
 final _router = GoRouter(
   initialLocation: '/home',
@@ -25,11 +26,6 @@ final _router = GoRouter(
           builder: (context, state) => const TimelinePage(),
         ),
         GoRoute(
-          path: '/search',
-          builder: (context, state) => const SearchPage(),
-        ),
-        // Dev-only routes — not in nav; access via /dev/logger and /dev/sessions
-        GoRoute(
           path: '/dev/logger',
           builder: (context, state) => const LoggerPage(),
         ),
@@ -38,6 +34,11 @@ final _router = GoRouter(
           builder: (context, state) => const SessionsPage(),
         ),
       ],
+    ),
+    // Outside shell — no bottom nav
+    GoRoute(
+      path: '/search',
+      builder: (context, state) => const SearchPage(),
     ),
     GoRoute(
       path: '/memory',
@@ -52,6 +53,35 @@ final _router = GoRouter(
   ],
 );
 
+ThemeData _buildTheme(Brightness brightness) {
+  final cs = ColorScheme.fromSeed(
+    seedColor: const Color(0xFF7C3AED),
+    brightness: brightness,
+  );
+  return ThemeData(
+    colorScheme: cs,
+    useMaterial3: true,
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: cs.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSpacing.sheetRadius),
+        ),
+      ),
+      showDragHandle: true,
+      dragHandleColor: cs.outlineVariant,
+      dragHandleSize: const Size(32, 4),
+    ),
+    navigationBarTheme: const NavigationBarThemeData(height: 64),
+    cardTheme: CardThemeData(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+      ),
+    ),
+  );
+}
+
 class ClueApp extends StatelessWidget {
   const ClueApp({super.key});
 
@@ -60,20 +90,8 @@ class ClueApp extends StatelessWidget {
     return MaterialApp.router(
       title: 'Clue',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF7C3AED),
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF7C3AED),
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
+      theme: _buildTheme(Brightness.light),
+      darkTheme: _buildTheme(Brightness.dark),
       themeMode: ThemeMode.system,
       routerConfig: _router,
     );
@@ -87,11 +105,7 @@ class _Shell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
-    final index = location.startsWith('/timeline')
-        ? 1
-        : location.startsWith('/search')
-            ? 2
-            : 0;
+    final index = location.startsWith('/timeline') ? 1 : 0;
 
     return Scaffold(
       body: child,
@@ -100,22 +114,17 @@ class _Shell extends StatelessWidget {
         onDestinationSelected: (i) {
           if (i == 0) context.go('/home');
           if (i == 1) context.go('/timeline');
-          if (i == 2) context.go('/search');
         },
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
+            icon: Icon(Icons.explore_outlined),
+            selectedIcon: Icon(Icons.explore),
+            label: 'Map',
           ),
           NavigationDestination(
-            icon: Icon(Icons.timeline_outlined),
-            selectedIcon: Icon(Icons.timeline),
-            label: 'Timeline',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.search),
-            label: 'Search',
+            icon: Icon(Icons.format_list_bulleted_outlined),
+            selectedIcon: Icon(Icons.format_list_bulleted),
+            label: 'Memories',
           ),
         ],
       ),
