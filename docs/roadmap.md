@@ -45,7 +45,7 @@ Three issue groups:
 - [x] Create Rust core library (`crates/`)
 - [x] Create Axum backend (`backend/`)
 - [x] Configure PostgreSQL
-- [ ] Configure CI
+- [x] Configure CI
 
 **Deliverable:** application compiles and backend deploys.
 
@@ -53,12 +53,12 @@ Three issue groups:
 
 ## Phase 1 — Sensor Logger (2 weeks)
 
-- [ ] Accelerometer stream
-- [ ] Gyroscope stream
-- [ ] Magnetometer stream
-- [ ] BLE scan
-- [ ] Session recording (start / stop / persist locally)
-- [ ] Session upload to backend
+- [x] Accelerometer stream
+- [x] Gyroscope stream
+- [x] Magnetometer stream
+- [x] BLE scan
+- [x] Session recording (start / stop / persist locally)
+- [x] Session upload to backend
 
 **Deliverable:** raw sensor logs stored and uploadable.
 
@@ -66,9 +66,9 @@ Three issue groups:
 
 ## Phase 2 — Replay System (2 weeks)
 
-- [ ] Session browser (list all sessions)
-- [ ] Session replay (play / pause / scrub)
-- [ ] Timeline view of sensor streams
+- [x] Session browser (list all sessions)
+- [x] Session replay (play / pause / scrub)
+- [x] Timeline view of sensor streams
 
 **Deliverable:** sensor sessions can be replayed and inspected.
 
