@@ -122,6 +122,10 @@ class _HomePageState extends State<HomePage> {
                       theme: isDark
                           ? ProtomapsThemes.darkV4()
                           : ProtomapsThemes.lightV4(),
+                      // Protomaps planet build tops out at zoom 15.
+                      // VectorTileLayer overzooms above this, so the map
+                      // keeps rendering without requesting non-existent tiles.
+                      maximumZoom: 15,
                     );
                   }
                   return TileLayer(

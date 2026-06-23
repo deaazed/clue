@@ -169,7 +169,7 @@ class _MemoryDetailPageState extends State<MemoryDetailPage> {
                 child: FlutterMap(
                   options: MapOptions(
                     initialCenter: LatLng(m.lat!, m.lng!),
-                    initialZoom: 17.0,
+                    initialZoom: 15.0,
                   ),
                   children: [
                     FutureBuilder<PmTilesVectorTileProvider>(
@@ -182,6 +182,7 @@ class _MemoryDetailPageState extends State<MemoryDetailPage> {
                             theme: isDark
                                 ? ProtomapsThemes.darkV4()
                                 : ProtomapsThemes.lightV4(),
+                            maximumZoom: 15,
                           );
                         }
                         return TileLayer(
