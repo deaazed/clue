@@ -1,3 +1,7 @@
+import 'package:flutter_test/flutter_test.dart';
+
 void main() {
-  // Tests will be added as features are implemented.
+  test('placeholder — real tests added per feature', () {
+    expect(true, isTrue);
+  });
 }
