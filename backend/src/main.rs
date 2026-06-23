@@ -3,7 +3,7 @@ mod routes;
 
 use axum::Router;
 use std::net::SocketAddr;
-use tower_http::{cors::CorsLayer, trace::TraceLayer};
+use tower_http::{cors::CorsLayer, services::ServeDir, trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
@@ -21,7 +21,10 @@ async fn main() {
     let pool = db::connect().await;
     db::migrate(&pool).await;
 
+    let tiles_dir = std::env::var("TILES_DIR").unwrap_or_else(|_| "/data/tiles".into());
+
     let app = Router::new()
+        .nest_service("/tiles", ServeDir::new(&tiles_dir))
         .merge(routes::router())
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http())

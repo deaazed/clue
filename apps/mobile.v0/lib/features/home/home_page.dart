@@ -4,8 +4,12 @@ import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:vector_map_tiles/vector_map_tiles.dart';
+import 'package:vector_map_tiles_pmtiles/vector_map_tiles_pmtiles.dart';
+import '../../config.dart';
 import '../../models/memory.dart';
 import '../../services/memory_repository.dart';
+import '../../theme/spacing.dart';
 import '../../widgets/memory_card.dart';
 import 'save_memory_sheet.dart';
 
@@ -20,10 +24,12 @@ class _HomePageState extends State<HomePage> {
   List<Memory> _memories = [];
   LatLng? _userPosition;
   final _mapController = MapController();
+  late final Future<PmTilesVectorTileProvider> _tileProviderFuture;
 
   @override
   void initState() {
     super.initState();
+    _tileProviderFuture = PmTilesVectorTileProvider.fromSource(kTilesUrl);
     _load();
     _locateUser();
   }
@@ -57,7 +63,9 @@ class _HomePageState extends State<HomePage> {
 
   void _setPosition(LatLng ll) {
     setState(() => _userPosition = ll);
-    try { _mapController.move(ll, 16); } catch (_) {}
+    try {
+      _mapController.move(ll, 16);
+    } catch (_) {}
   }
 
   Future<void> _showSave() async {
@@ -74,9 +82,6 @@ class _HomePageState extends State<HomePage> {
     showModalBottomSheet(
       context: context,
       useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder: (_) => _PinSheet(
         memory: m,
         userPosition: _userPosition,
@@ -92,7 +97,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final tileUrl = isDark
+    final cartoUrl = isDark
         ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
         : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
     final pinned = _memories.where((m) => m.lat != null).toList();
@@ -100,7 +105,6 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       body: Stack(
         children: [
-          // Full-screen map
           FlutterMap(
             mapController: _mapController,
             options: const MapOptions(
@@ -108,10 +112,24 @@ class _HomePageState extends State<HomePage> {
               initialZoom: 5,
             ),
             children: [
-              TileLayer(
-                urlTemplate: tileUrl,
-                subdomains: const ['a', 'b', 'c', 'd'],
-                userAgentPackageName: 'com.clue',
+              FutureBuilder<PmTilesVectorTileProvider>(
+                future: _tileProviderFuture,
+                builder: (context, snap) {
+                  if (snap.hasData) {
+                    return VectorTileLayer(
+                      tileProviders:
+                          TileProviders({'protomaps': snap.data!}),
+                      theme: isDark
+                          ? ProtomapsThemes.darkV4()
+                          : ProtomapsThemes.lightV4(),
+                    );
+                  }
+                  return TileLayer(
+                    urlTemplate: cartoUrl,
+                    subdomains: const ['a', 'b', 'c', 'd'],
+                    userAgentPackageName: 'com.clue',
+                  );
+                },
               ),
               MarkerLayer(
                 markers: [
@@ -135,8 +153,7 @@ class _HomePageState extends State<HomePage> {
                         decoration: BoxDecoration(
                           color: cs.primary,
                           shape: BoxShape.circle,
-                          border:
-                              Border.all(color: Colors.white, width: 3),
+                          border: Border.all(color: Colors.white, width: 3),
                           boxShadow: [
                             BoxShadow(
                               blurRadius: 8,
@@ -151,29 +168,57 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
 
-          // Search bar overlay
+          // Floating search bar
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.sm + 4,
+                AppSpacing.md,
+                0,
+              ),
               child: GestureDetector(
-                onTap: () => context.go('/search'),
+                onTap: () => context.push('/search'),
                 child: Material(
-                  elevation: 3,
+                  elevation: 4,
                   shadowColor: Colors.black26,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
+                      horizontal: AppSpacing.md,
+                      vertical: 13,
+                    ),
                     child: Row(
                       children: [
                         Icon(Icons.search,
                             color: cs.onSurfaceVariant, size: 20),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Search memories…',
-                          style: TextStyle(
-                              color: cs.onSurfaceVariant, fontSize: 15),
+                        const SizedBox(width: AppSpacing.sm + 4),
+                        Expanded(
+                          child: Text(
+                            'Search memories…',
+                            style: TextStyle(
+                              color: cs.onSurfaceVariant,
+                              fontSize: 15,
+                            ),
+                          ),
                         ),
+                        if (_memories.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: cs.primaryContainer,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '${_memories.length}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: cs.onPrimaryContainer,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -200,7 +245,7 @@ class _HomePageState extends State<HomePage> {
                   : Icons.location_searching,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.sm + 2),
           FloatingActionButton.extended(
             heroTag: 'save',
             onPressed: _showSave,
@@ -246,8 +291,10 @@ class _PinSheet extends StatelessWidget {
   double? get _dist {
     if (userPosition == null) return null;
     return Geolocator.distanceBetween(
-      userPosition!.latitude, userPosition!.longitude,
-      memory.lat!, memory.lng!,
+      userPosition!.latitude,
+      userPosition!.longitude,
+      memory.lat!,
+      memory.lng!,
     );
   }
 
@@ -258,7 +305,12 @@ class _PinSheet extends StatelessWidget {
     final dist = _dist;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.md,
+        AppSpacing.lg,
+        AppSpacing.lg,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -271,12 +323,12 @@ class _PinSheet extends StatelessWidget {
                 height: 48,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppSpacing.iconRadius),
                 ),
                 child: Icon(memoryIcon(memory.iconType),
                     color: color, size: 24),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,13 +353,13 @@ class _PinSheet extends StatelessWidget {
             ],
           ),
           if (memory.note != null) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.sm + 2),
             Text(
               memory.note!,
               style: TextStyle(color: cs.onSurfaceVariant, fontSize: 14),
             ),
           ],
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.lg),
           Row(
             children: [
               Expanded(
@@ -317,7 +369,7 @@ class _PinSheet extends StatelessWidget {
                   label: const Text('Details'),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.sm + 4),
               Expanded(
                 child: FilledButton.icon(
                   onPressed: () async {
@@ -337,6 +389,7 @@ class _PinSheet extends StatelessWidget {
     );
   }
 
-  String _fmtDist(double m) =>
-      m < 1000 ? '${m.toStringAsFixed(0)} m away' : '${(m / 1000).toStringAsFixed(1)} km away';
+  String _fmtDist(double m) => m < 1000
+      ? '${m.toStringAsFixed(0)} m away'
+      : '${(m / 1000).toStringAsFixed(1)} km away';
 }

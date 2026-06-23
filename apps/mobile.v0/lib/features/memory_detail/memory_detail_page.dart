@@ -4,7 +4,11 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:vector_map_tiles/vector_map_tiles.dart';
+import 'package:vector_map_tiles_pmtiles/vector_map_tiles_pmtiles.dart';
+import '../../config.dart';
 import '../../models/memory.dart';
+import '../../theme/spacing.dart';
 import '../../widgets/memory_card.dart';
 
 class MemoryDetailPage extends StatefulWidget {
@@ -17,10 +21,12 @@ class MemoryDetailPage extends StatefulWidget {
 
 class _MemoryDetailPageState extends State<MemoryDetailPage> {
   double? _distanceMeters;
+  late final Future<PmTilesVectorTileProvider> _tileProviderFuture;
 
   @override
   void initState() {
     super.initState();
+    _tileProviderFuture = PmTilesVectorTileProvider.fromSource(kTilesUrl);
     if (widget.memory.lat != null) _fetchDistance();
   }
 
@@ -51,8 +57,6 @@ class _MemoryDetailPageState extends State<MemoryDetailPage> {
 
   void _share() {
     final m = widget.memory;
-    final lines = <String>[m.label];
-
     final typeLabel = switch (m.iconType) {
       'item' => 'Item',
       'place' => 'Place',
@@ -62,18 +66,18 @@ class _MemoryDetailPageState extends State<MemoryDetailPage> {
       'restroom' => 'Restroom',
       _ => 'Other',
     };
-    lines.add('$typeLabel · ${_fmtDate(m.timestamp)}');
-
+    final lines = <String>[
+      m.label,
+      '$typeLabel · ${_fmtDate(m.timestamp)}',
+    ];
     if (m.note != null) {
       lines.add('');
       lines.add(m.note!);
     }
-
     if (m.lat != null) {
       lines.add('');
       lines.add('https://maps.google.com/?q=${m.lat},${m.lng}');
     }
-
     Share.share(lines.join('\n'));
   }
 
@@ -82,10 +86,13 @@ class _MemoryDetailPageState extends State<MemoryDetailPage> {
     final m = widget.memory;
     final cs = Theme.of(context).colorScheme;
     final color = memoryColor(m.iconType);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cartoUrl = isDark
+        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+        : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(m.label),
         backgroundColor: cs.surface,
         surfaceTintColor: Colors.transparent,
         actions: [
@@ -97,132 +104,203 @@ class _MemoryDetailPageState extends State<MemoryDetailPage> {
         ],
       ),
       body: Builder(builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final tileUrl = isDark
-            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
-            : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
         return ListView(
-        children: [
-          if (m.lat != null)
-            SizedBox(
-              height: 280,
-              child: FlutterMap(
-                options: MapOptions(
-                  initialCenter: LatLng(m.lat!, m.lng!),
-                  initialZoom: 17.0,
-                ),
+          children: [
+            // Header: Hero icon + label + type
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.sm,
+                AppSpacing.lg,
+                AppSpacing.md,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TileLayer(
-                    urlTemplate: tileUrl,
-                    subdomains: const ['a', 'b', 'c', 'd'],
-                    userAgentPackageName: 'com.clue',
-                  ),
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: LatLng(m.lat!, m.lng!),
-                        width: 56,
-                        height: 56,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: color,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                                color: Colors.white, width: 3),
-                            boxShadow: const [
-                              BoxShadow(
-                                  blurRadius: 8, color: Colors.black26)
-                            ],
-                          ),
-                          child: Icon(memoryIcon(m.iconType),
-                              color: Colors.white, size: 22),
-                        ),
+                  Hero(
+                    tag: 'memory_icon_${m.id}',
+                    child: Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.15),
+                        borderRadius:
+                            BorderRadius.circular(AppSpacing.iconRadius),
                       ),
-                    ],
+                      child: Icon(memoryIcon(m.iconType),
+                          color: color, size: 26),
+                    ),
                   ),
-                ],
-              ),
-            )
-          else
-            Container(
-              height: 160,
-              color: cs.surfaceContainerHighest,
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.location_off,
-                        size: 40, color: cs.outlineVariant),
-                    const SizedBox(height: 8),
-                    Text('No location saved',
-                        style:
-                            TextStyle(color: cs.onSurfaceVariant)),
-                  ],
-                ),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Distance (live)
-                if (_distanceMeters != null)
-                  _InfoRow(
-                    icon: Icons.near_me,
-                    iconColor: cs.primary,
-                    label: _fmtDistance(_distanceMeters!),
-                  )
-                else if (m.lat != null)
-                  _InfoRow(
-                    icon: Icons.near_me,
-                    iconColor: cs.outlineVariant,
-                    label: 'Getting distance…',
-                  ),
-
-                // Timestamp
-                _InfoRow(
-                  icon: Icons.access_time_outlined,
-                  iconColor: cs.onSurfaceVariant,
-                  label: _fmtDate(m.timestamp),
-                ),
-
-                // BLE context
-                if (m.bleDevices.isNotEmpty)
-                  _InfoRow(
-                    icon: Icons.bluetooth,
-                    iconColor: color,
-                    label:
-                        '${m.bleDevices.length} Bluetooth beacon${m.bleDevices.length == 1 ? '' : 's'} nearby when saved',
-                  ),
-
-                // Note
-                if (m.note != null)
-                  _InfoRow(
-                    icon: Icons.notes_outlined,
-                    iconColor: cs.onSurfaceVariant,
-                    label: m.note!,
-                  ),
-
-                if (m.lat != null) ...[
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: _openInMaps,
-                      icon: const Icon(Icons.directions),
-                      label: const Text('Open in Maps'),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          m.label,
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                height: 1.15,
+                              ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          _typeLabel(m.iconType),
+                          style: TextStyle(
+                            color: color,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
-      );
+
+            // Map
+            if (m.lat != null)
+              SizedBox(
+                height: 220,
+                child: FlutterMap(
+                  options: MapOptions(
+                    initialCenter: LatLng(m.lat!, m.lng!),
+                    initialZoom: 17.0,
+                  ),
+                  children: [
+                    FutureBuilder<PmTilesVectorTileProvider>(
+                      future: _tileProviderFuture,
+                      builder: (context, snap) {
+                        if (snap.hasData) {
+                          return VectorTileLayer(
+                            tileProviders:
+                                TileProviders({'protomaps': snap.data!}),
+                            theme: isDark
+                                ? ProtomapsThemes.darkV4()
+                                : ProtomapsThemes.lightV4(),
+                          );
+                        }
+                        return TileLayer(
+                          urlTemplate: cartoUrl,
+                          subdomains: const ['a', 'b', 'c', 'd'],
+                          userAgentPackageName: 'com.clue',
+                        );
+                      },
+                    ),
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: LatLng(m.lat!, m.lng!),
+                          width: 56,
+                          height: 56,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                              border:
+                                  Border.all(color: Colors.white, width: 3),
+                              boxShadow: const [
+                                BoxShadow(
+                                    blurRadius: 8, color: Colors.black26)
+                              ],
+                            ),
+                            child: Icon(memoryIcon(m.iconType),
+                                color: Colors.white, size: 22),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              )
+            else
+              Container(
+                height: 120,
+                color: cs.surfaceContainerHighest,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.location_off,
+                          size: 32, color: cs.outlineVariant),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text('No location saved',
+                          style:
+                              TextStyle(color: cs.onSurfaceVariant, fontSize: 13)),
+                    ],
+                  ),
+                ),
+              ),
+
+            // Info rows
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (_distanceMeters != null)
+                    _InfoRow(
+                      icon: Icons.near_me,
+                      iconColor: cs.primary,
+                      label: _fmtDistance(_distanceMeters!),
+                    )
+                  else if (m.lat != null)
+                    _InfoRow(
+                      icon: Icons.near_me,
+                      iconColor: cs.outlineVariant,
+                      label: 'Getting distance…',
+                    ),
+                  _InfoRow(
+                    icon: Icons.access_time_outlined,
+                    iconColor: cs.onSurfaceVariant,
+                    label: _fmtDate(m.timestamp),
+                  ),
+                  if (m.bleDevices.isNotEmpty)
+                    _InfoRow(
+                      icon: Icons.bluetooth,
+                      iconColor: color,
+                      label:
+                          '${m.bleDevices.length} Bluetooth beacon${m.bleDevices.length == 1 ? '' : 's'} nearby when saved',
+                    ),
+                  if (m.note != null)
+                    _InfoRow(
+                      icon: Icons.notes_outlined,
+                      iconColor: cs.onSurfaceVariant,
+                      label: m.note!,
+                    ),
+                  if (m.lat != null) ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: _openInMaps,
+                        icon: const Icon(Icons.directions),
+                        label: const Text('Open in Maps'),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        );
       }),
     );
   }
+
+  String _typeLabel(String type) => switch (type) {
+        'item' => 'Item',
+        'place' => 'Place',
+        'parking' => 'Parking',
+        'gate' => 'Gate',
+        'outlet' => 'Outlet',
+        'restroom' => 'Restroom',
+        _ => 'Other',
+      };
 
   String _fmtDistance(double m) {
     if (m < 1000) return '${m.toStringAsFixed(0)} m away';
@@ -254,12 +332,12 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm - 1),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 18, color: iconColor),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.sm + 4),
           Expanded(
             child: Text(
               label,

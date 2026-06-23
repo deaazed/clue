@@ -20,11 +20,15 @@ services:
     environment:
       DATABASE_URL: postgres://clue:${POSTGRES_PASSWORD}@postgres/clue?sslmode=disable
       PORT: ${PORT:-3000}
+      TILES_DIR: /data/tiles
     ports:
       - "${PORT:-3000}:${PORT:-3000}"
+    volumes:
+      - tiles_data:/data/tiles:ro
     depends_on:
       postgres:
         condition: service_healthy
 
 volumes:
   postgres_data:
+  tiles_data:

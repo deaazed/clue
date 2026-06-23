@@ -47,6 +47,8 @@ dependencies:
 
   # Share memories via native share sheet
   share_plus: ^10.1.0
+  vector_map_tiles: ^8.0.0
+  vector_map_tiles_pmtiles: ^1.5.0
 
 dev_dependencies:
   flutter_test:
