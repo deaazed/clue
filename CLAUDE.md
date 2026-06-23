@@ -90,30 +90,25 @@ clue/
 
 Repository: https://github.com/deaazed/clue
 
-**Active milestone: [CLUE - Sensor Logger (Clue SL)](https://github.com/deaazed/clue/milestone/1)** (due 2026-07-31) — finishing deployment
+**Milestone 1: [CLUE - Sensor Logger (Clue SL)](https://github.com/deaazed/clue/milestone/1)** ✅ COMPLETE
 
-**Next milestone: [Clue — Memory App MVP](https://github.com/deaazed/clue/milestone/2)** (due 2027-03-31) — user-facing memory features
+Milestone 1 issues: [#1](https://github.com/deaazed/clue/issues/1) ✅ · [#2](https://github.com/deaazed/clue/issues/2) ✅ · [#3](https://github.com/deaazed/clue/issues/3) ✅ · [#4](https://github.com/deaazed/clue/issues/4) ✅ · [#5 CI](https://github.com/deaazed/clue/issues/5) ✅ · [#6 Backend deploy](https://github.com/deaazed/clue/issues/6) ✅ · [#7 App deploy](https://github.com/deaazed/clue/issues/7) ✅ · [#8 Usability](https://github.com/deaazed/clue/issues/8) ✅
 
-Milestone 1 issues: [#1](https://github.com/deaazed/clue/issues/1) ✅ · [#2](https://github.com/deaazed/clue/issues/2) ✅ · [#3](https://github.com/deaazed/clue/issues/3) ✅ · [#4](https://github.com/deaazed/clue/issues/4) ✅ · [#5 CI](https://github.com/deaazed/clue/issues/5) ✅ · [#6 Backend deploy](https://github.com/deaazed/clue/issues/6) · [#7 App deploy](https://github.com/deaazed/clue/issues/7) · [#8 Usability](https://github.com/deaazed/clue/issues/8) ✅
+**Milestone 2: [Clue — Memory App MVP](https://github.com/deaazed/clue/milestone/2)** ✅ COMPLETE
 
-Milestone 2 issues: [#9 Vision](https://github.com/deaazed/clue/issues/9) · [#10 Save Memory](https://github.com/deaazed/clue/issues/10) · [#11 Timeline](https://github.com/deaazed/clue/issues/11) · [#12 Search](https://github.com/deaazed/clue/issues/12) · [#13 Return](https://github.com/deaazed/clue/issues/13) · [#14 Share](https://github.com/deaazed/clue/issues/14)
+Milestone 2 issues: [#9 Vision](https://github.com/deaazed/clue/issues/9) ✅ · [#10 Save Memory](https://github.com/deaazed/clue/issues/10) ✅ · [#11 Timeline](https://github.com/deaazed/clue/issues/11) ✅ · [#12 Search](https://github.com/deaazed/clue/issues/12) ✅ · [#13 Return](https://github.com/deaazed/clue/issues/13) ✅ · [#14 Share](https://github.com/deaazed/clue/issues/14) ✅
 
 ---
 
-## Current State (as of 2026-06-23)
+## Current State (as of 2026-06-24)
 
-**Current phase:** Phase 2 — Memory App MVP. Milestone 1 fully closed. Issues #9–#13 closed. Open: #14 Share Memory.
+**Current phase:** Both milestones complete. Next: dogfooding + Phase 3 (Dead Reckoning).
 
-### Known bugs to fix next session
+### CI/CD
 
-- **GPS not saving on Save Memory**: `getLastKnownPosition()` with ≤150m/≤15min threshold is too strict. Most devices fail it so `lat`/`lng` stay null. Fix: fall back to `getCurrentPosition()` with ~5s timeout if last known fails.
-- **No locate-me button on home map**: button is hidden when `_userPosition == null` (which happens when GPS fails). Fix: always show the button, trigger location fetch on tap.
-- **Map style disliked by user**: user doesn't like the current OSM map look. Discuss style direction next session (CartoDB Voyager tiles? Dark tiles? Different style?).
-
-### CD workflow
-
-- GitHub Actions deploy on push to master (backend paths only) → SSH → `git pull` → `docker compose up --build -d` → health check
-- Secrets required: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` ✅ added
+- CI: GitHub Actions — `flutter analyze` + `flutter test` on `apps/mobile.v0/**` changes
+- CD: GitHub Actions on `backend/**` changes → SSH → `git pull` → `docker compose up --build -d` → health check
+- Secrets: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` ✅
 
 ### apps/mobile — map/home prototype
 
@@ -132,63 +127,59 @@ Dependencies: `go_router`, `flutter_map`, `latlong2`, `permission_handler`, `geo
 
 Note: `maplibre_gl` was replaced with `flutter_map` — maplibre_gl 0.20.0 uses the removed Flutter v1 Android embedding API and fails to build on current SDKs.
 
-### apps/mobile.v0 — Clue SL sensor logger (active)
+### apps/mobile.v0 — Clue (active)
 
 Package: `clue_sl` · Org: `com.clue` · Android + iOS only
+
+**Navigation (3 tabs):** Home (map) · Timeline · Search  
+**Outside shell:** `/memory` (MemoryDetailPage) · `/sessions/:id` (SessionDetailPage)  
+**Dev-only routes:** `/dev/logger` · `/dev/sessions`
 
 | File | Notes |
 |------|-------|
 | `lib/main.dart` | Entry point → ClueApp |
-| `lib/app.dart` | MaterialApp.router + GoRouter + shell nav + `/sessions/:id` route outside shell |
-| `lib/config.dart` | `kBackendUrl` constant — change to LAN IP or Hetzner URL |
-| `lib/models/session.dart` | Session, Vec3, Sample\<T\>, BleDevice — mirrors Rust types |
+| `lib/app.dart` | MaterialApp.router, GoRouter, dark + light theme (ThemeMode.system, 0xFF7C3AED seed) |
+| `lib/config.dart` | `kBackendUrl = 'http://37.27.255.248:3000'` |
+| `lib/models/memory.dart` | Memory model (id, label, iconType, note, lat, lng, bleDevices, timestamp) |
+| `lib/models/session.dart` | Session, Vec3, Sample\<T\>, BleDevice |
+| `lib/services/memory_repository.dart` | Save/loadAll/delete memories as JSON in Documents/clue_memories/ |
 | `lib/services/session_repository.dart` | Save/load/delete sessions as JSON in Documents/clue_sessions/ |
-| `lib/services/api_client.dart` | `ApiClient.uploadSession()` — POST /api/sessions, 30 s timeout |
-| `lib/features/logger/logger_controller.dart` | ChangeNotifier — start/stop, IMU streams, BLE scan loop |
-| `lib/features/logger/logger_page.dart` | Record/stop UI + live sensor readout + elapsed timer |
-| `lib/services/foreground_task.dart` | `foregroundEntryPoint` + `_RecordingTaskHandler` — runs in foreground service isolate |
-| `lib/features/sessions/sessions_page.dart` | Session list, per-tile upload icon, Upload All button, upload reminder MaterialBanner |
-| `lib/features/session_detail/session_detail_page.dart` | Replay tab (scrubber + live values) + Charts tab (magnitude line charts) |
-| `android/app/src/main/AndroidManifest.xml` | Location + BLE + foreground service permissions + ForegroundTaskService |
+| `lib/services/api_client.dart` | POST /api/sessions, 30 s timeout |
+| `lib/widgets/memory_card.dart` | Shared MemoryCard, memoryIcon(), memoryColor() |
+| `lib/features/home/home_page.dart` | Full-screen CARTO map, memory pins, search bar overlay, locate-me FAB, Save Memory FAB |
+| `lib/features/home/save_memory_sheet.dart` | Bottom sheet: icon picker, label, note, GPS + 1.5 s BLE scan |
+| `lib/features/timeline/timeline_page.dart` | Chronological memory list, swipe-to-delete |
+| `lib/features/search/search_page.dart` | Live filter on label/note |
+| `lib/features/memory_detail/memory_detail_page.dart` | CARTO map pin, live distance, BLE context, note, Open in Maps, Share |
+| `lib/features/logger/logger_page.dart` | Dev: record/stop UI, live IMU readout, elapsed timer |
+| `lib/services/foreground_task.dart` | Background recording isolate + notification Stop button |
+| `lib/features/sessions/sessions_page.dart` | Dev: session list, upload, upload reminder banner |
+| `lib/features/session_detail/session_detail_page.dart` | Dev: replay tab + magnitude charts |
+| `android/app/src/main/AndroidManifest.xml` | Location + BLE + foreground service permissions |
 
-Dependencies: `go_router`, `sensors_plus`, `flutter_blue_plus`, `path_provider`, `http`, `permission_handler`, `flutter_foreground_task`
+Dependencies: `go_router`, `sensors_plus`, `flutter_blue_plus`, `path_provider`, `http`, `permission_handler`, `flutter_foreground_task`, `flutter_svg`, `geolocator`, `flutter_map`, `latlong2`, `url_launcher`, `share_plus`
 
-Sensor recording design:
-- IMU at 20 Hz (50 ms period) via `sensors_plus` — accel, gyro, mag
-- BLE scan every 5 s (4 s timeout) via `flutter_blue_plus`; skipped gracefully if BT off or permissions denied
-- UI refreshes at 10 Hz (100 ms timer) — sensor data accumulates independently at full rate
-- Sessions stored as `Documents/clue_sessions/<startedAtMs>.json` (one file per session)
+Map tiles:
+- Light: `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png` (CARTO Positron)
+- Dark: `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png` (CARTO Dark Matter)
+- Subdomains: `a,b,c,d` — no API key required
 
-Upload design:
-- `ApiClient.uploadSession()` POSTs session JSON to `kBackendUrl/api/sessions`
-- On success: local file deleted, tile animates out (`SizeTransition` + `FadeTransition`, 350 ms)
-- Backend accepts missing `baro` field (`#[serde(default)]` on `Session.baro`)
-- `kBackendUrl` in `lib/config.dart` — set to machine LAN IP for physical device testing
+Memory model: icon types with colors — `item` (amber) · `place` (emerald) · `parking` (blue) · `gate` (orange) · `outlet` (yellow) · `restroom` (violet) · `other` (gray)
 
-Session detail (issue #3):
-- Tap any session tile → `SessionDetailPage` (pushed outside shell, back button in AppBar)
-- **Replay tab**: MM:SS.t timer, scrubber slider, play/pause (100 ms ticks), binary-search sample lookup, live accel/gyro/mag/BLE tiles
-- **Charts tab**: accel / gyro / mag magnitude (√x²+y²+z²) over time, drawn with `CustomPainter` (no extra dep)
+GPS strategy in save: `getLastKnownPosition()` (≤150 m, ≤15 min) → fallback `getCurrentPosition(medium, 5 s)` → null if all fail
 
-Usability (issue #8):
-- **Permissions**: `permission_handler` requests location + BLE scan/connect + notifications on first recording
-- **Foreground service**: `flutter_foreground_task` keeps recording alive when app is backgrounded; persistent notification shows elapsed time + Stop action button
-- **Notification Stop button**: handled via `_RecordingTaskHandler.onNotificationButtonPressed` → `sendDataToMain('stop')` → `LoggerController._onTaskData` calls `stop()`
-- **Upload reminder**: `MaterialBanner` shown on Sessions page if any session > 5 min is pending upload
-- **Live sample count**: `accelCount` / `gyroCount` / `magCount` getters on `LoggerController`, shown as a compact row during recording
+Sensor recording (dev):
+- IMU at 20 Hz via `sensors_plus`; BLE scan every 5 s (4 s timeout)
+- Sessions stored as `Documents/clue_sessions/<startedAtMs>.json`
+- Foreground service keeps recording alive; notification shows elapsed time + Stop button
 
 ### Infrastructure
 
-- Mono-repo structure in place: `apps/`, `crates/`, `backend/`, `data/`
-- Rust workspace configured at `Cargo.toml` (root), 5 crates + backend stub
-- `crates/sensors` has real types: `Session`, `Vec3`, `Sample<T>`, all sensor aliases, 3 unit tests
-- `crates/pdr`, `fingerprint`, `mapping`, `localization` are stubs (depend on `sensors`)
-- `backend/` is a real Axum server: health check + session CRUD, SQLx + PostgreSQL, auto-migrations
-- Rust installed (GNU toolchain `x86_64-pc-windows-gnu`). Run `cargo build` from the repo root.
-- PostgreSQL database installed. Ran `cargo run -p backend` from the repo root and ran `Invoke-RestMethod http://localhost:3000/health` resulting `ok`.
-- **VPS**: Hetzner CX23, Helsinki (hel1). IPv4: `37.27.255.248`. SSH via `static.248.255.27.37.clients.your-server.de` (direct IP SSH didn't work but hostname does). Ubuntu 24.04 LTS.
-- **Docker**: `Dockerfile` + `docker-compose.yml` at repo root. Multi-stage Rust build + postgres:16-alpine. BuildKit cache mounts for fast rebuilds.
-- `docker compose up --build` running on server as of 2026-06-23 (first build in progress — slow, compiles Rust from scratch).
+- Mono-repo: `apps/`, `crates/`, `backend/`, `data/`
+- `crates/sensors` has real types: `Session`, `Vec3`, `Sample<T>`, 3 unit tests; others are stubs
+- `backend/` — Axum + SQLx + PostgreSQL: `GET /health`, `POST /api/sessions`, `GET /api/sessions`, `GET /api/sessions/:id`; `Session.baro` is `#[serde(default)]`
+- **VPS**: Hetzner CX23, Helsinki. IPv4: `37.27.255.248`. SSH via `static.248.255.27.37.clients.your-server.de`. Ubuntu 24.04 LTS.
+- **Docker**: `Dockerfile` + `docker-compose.yml` at root — multi-stage Rust build + postgres:16-alpine. Running on VPS.
 
 ---
 
@@ -197,16 +188,16 @@ Usability (issue #8):
 | Phase | Name | Duration | Status |
 |-------|------|----------|--------|
 | 0 | Project Setup | 1 week | **Done** |
-| 1 | Sensor Logger | 2 weeks | **In progress** (core done, pending: deploy #6 #7) |
-| 2 | Replay System | 2 weeks | Not started |
+| 1 | Sensor Logger | 2 weeks | **Done** (Milestone 1 closed) |
+| 1.5 | Memory App MVP | — | **Done** (Milestone 2 closed) |
+| 2 | Replay System | 2 weeks | **Done** (session detail + charts) |
 | 3 | Dead Reckoning | 4 weeks | Not started |
 | 4 | Indoor Visualization | 2 weeks | Not started |
 | 5 | Collaborative Mapping | 4 weeks | Not started |
-| 6 | Item Tagging | 4 weeks | Not started |
 | 7 | Fingerprinting | 4 weeks | Not started |
 | 8 | Advanced Localization | 4 weeks | Not started |
 
-**First milestone:** A deployed app that records sensor sessions, uploads them, and replays them.
+**Next priority:** Dogfood the app. Collect 100+ real sessions before starting Phase 3 (PDR).
 
 ---
 
@@ -233,18 +224,6 @@ Budget constraint: **€15/month**, max €250/year.
 
 ---
 
-## Sensor Logger (Phase 1) — Target Deliverables
-
-Working from `apps/mobile.v0` (package `clue_sl`):
-
-- Accelerometer recording
-- Gyroscope recording
-- Magnetometer recording
-- BLE scanning
-- Session recording (start / stop / persist locally)
-
----
-
 ## Key Decisions
 
 - `maplibre_gl` dropped in favour of `flutter_map` (v1 Android embedding incompatibility)
@@ -257,7 +236,10 @@ Working from `apps/mobile.v0` (package `clue_sl`):
 - Trajectory rendering = sensor magnitude charts for now; spatial path deferred to Phase 3 (PDR)
 - Commit style: `[#<issue>] - <message>` (dash after issue number)
 - Product direction: personal indoor memory app — sensor data collected silently; never exposed in UI
-- Memory App MVP (#10–#14) starts after backend (#6) and app (#7) are deployed
+- Memory App MVP (#10–#14) complete; both milestones closed as of 2026-06-24
+- CARTO Positron (light) + Dark Matter (dark) tiles — no API key, subdomains a/b/c/d
+- Share feature uses `share_plus` v10 API: `Share.share(text)` (not ShareParams, which is v11+)
+- Multilanguage deferred to a future milestone
 
 ---
 

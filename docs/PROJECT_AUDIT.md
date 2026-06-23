@@ -2,188 +2,172 @@
 
 *Update this file at the end of each work session or after any significant structural change.*
 
-Last updated: 2026-06-22 (end of session)
+Last updated: 2026-06-24 (end of session)
 
 ---
 
 ## Current Phase
 
-**Phase 1 — Sensor Logger** (in progress)
-
-Issues #1–#5 and #8 closed. Open: #6 Backend deployment, #7 App deployment.
+**Between milestones.** Both Milestone 1 (Sensor Logger) and Milestone 2 (Memory App MVP) are fully complete. Next: Phase 3 (Dead Reckoning) or dogfooding the app as-is.
 
 ---
 
-## Active Milestone
+## Milestone 1 — CLUE Sensor Logger (Clue SL) ✅ COMPLETE
 
-**[CLUE - Sensor Logger (Clue SL)](https://github.com/deaazed/clue/milestone/1)** · Due 2026-07-31
+All issues closed: #1 · #2 · #3 · #4 · #5 · #6 · #7 · #8
 
-| Group | Task | Status |
-|-------|------|--------|
-| Infrastructure | Repository cleanup | ✅ Done |
-| Infrastructure | Flutter application (apps/mobile.v0 created) | ✅ Done |
-| Infrastructure | Rust core setup | ✅ Done |
-| Infrastructure | Axum backend | ✅ Done |
-| Infrastructure | PostgreSQL | ✅ Done |
-| Sensor Collection | Accelerometer | ✅ Done |
-| Sensor Collection | Gyroscope | ✅ Done |
-| Sensor Collection | Magnetometer | ✅ Done |
-| Sensor Collection | BLE scan | ✅ Done |
-| Sensor Collection | Session recording | ✅ Done |
-| Visualization | Session browser | ✅ Done |
-| Visualization | Session replay | ✅ Done |
-| Visualization | Trajectory rendering | ✅ Done |
-| Session upload | Upload to backend | ✅ Done (#4) |
-| Usability | Background running + notifications + permissions + UI | ✅ Done (#8) |
-| Deployment | CI setup | ✅ Done (#5) |
-| Deployment | Backend (Hetzner) | Not started (#6) |
-| Deployment | mobile.v0 (APK / Play Store) | Not started (#7) |
+| Task | Status |
+|------|--------|
+| Flutter app skeleton (mobile.v0) | ✅ |
+| Rust core setup | ✅ |
+| Axum + PostgreSQL backend | ✅ |
+| Accelerometer / gyroscope / magnetometer | ✅ |
+| BLE scan | ✅ |
+| Session recording (start/stop/persist) | ✅ |
+| Session upload to backend (POST /api/sessions) | ✅ |
+| Session browser + replay + magnitude charts | ✅ |
+| Background foreground service + notifications | ✅ |
+| Runtime permissions | ✅ |
+| CI (GitHub Actions — test + analyze) | ✅ |
+| CD (GitHub Actions — SSH deploy to Hetzner) | ✅ |
+| Backend deployed to Hetzner CX23 (Docker Compose) | ✅ |
+| App deployed to Pixel 6 (debug APK) | ✅ |
 
 ---
 
-## Repository Structure
+## Milestone 2 — Memory App MVP ✅ COMPLETE
 
-```
-clue/
-├── apps/
-│   ├── mobile/          # Map/home prototype — flutter_map, runs on device
-│   ├── mobile.v0/       # Clue SL sensor logger — active development
-│   └── dashboard/       # Placeholder
-├── crates/              # sensors/ pdr/ fingerprint/ mapping/ localization/ — all empty
-├── backend/             # api/ workers/ — empty
-├── data/                # empty
-└── docs/                # vision, roadmap, audit, research/ (empty)
-```
+All issues closed: #9 · #10 · #11 · #12 · #13 · #14
+
+| Issue | Feature | Status |
+|-------|---------|--------|
+| #9 | App vision / rebrand to "Clue" | ✅ |
+| #10 | Save Memory (GPS + BLE + icon picker + label/note) | ✅ |
+| #11 | Timeline (chronological list, swipe-to-delete) | ✅ |
+| #12 | Search (live filter on label/note) | ✅ |
+| #13 | Return to Memory (detail page: map pin, live distance, navigate) | ✅ |
+| #14 | Share Memory (native share sheet from detail AppBar) | ✅ |
 
 ---
 
-## apps/mobile (map prototype)
+## apps/mobile.v0 (Clue — active)
 
-**Status:** Builds and runs on Pixel 6 (Android 16, API 36).
+**Status:** Both sensor logger (dev routes) and Memory App MVP features fully implemented.
+
+Package: `clue_sl` · Org: `com.clue` · Android + iOS
+
+### Navigation
+
+Three user-facing tabs (NavigationBar):
+- **Home** (`/home`) — full-screen CARTO map with memory pins, search bar overlay, locate-me FAB, Save Memory extended FAB
+- **Timeline** (`/timeline`) — chronological memory list, swipe-to-delete, tap → detail
+- **Search** (`/search`) — live filter on label/note, tap → detail
+
+Dev-only routes (no nav entry):
+- `/dev/logger` — sensor recorder (record/stop, live IMU readout)
+- `/dev/sessions` — session browser + upload + replay
+
+Outside shell (no nav bar):
+- `/memory` — MemoryDetailPage (map, distance, BLE context, note, Open in Maps, Share)
+- `/sessions/:id` — SessionDetailPage (replay tab + charts tab)
+
+### Key files
+
+| File | Purpose |
+|------|---------|
+| `lib/main.dart` | Entry point |
+| `lib/app.dart` | MaterialApp.router, GoRouter, dark + light theme (ThemeMode.system, 0xFF7C3AED seed) |
+| `lib/config.dart` | `kBackendUrl = 'http://37.27.255.248:3000'` |
+| `lib/models/memory.dart` | Memory model (id, label, iconType, note, lat, lng, bleDevices, timestamp) |
+| `lib/models/session.dart` | Session, Vec3, Sample\<T\>, BleDevice |
+| `lib/services/memory_repository.dart` | Save/loadAll/delete memories as JSON in Documents/clue_memories/ |
+| `lib/services/session_repository.dart` | Save/load/delete sessions as JSON in Documents/clue_sessions/ |
+| `lib/services/api_client.dart` | POST /api/sessions |
+| `lib/features/home/home_page.dart` | Map-first home (CARTO tiles, pins, search bar, locate-me, save sheet) |
+| `lib/features/home/save_memory_sheet.dart` | Bottom sheet: icon picker, label, note, GPS + BLE capture |
+| `lib/features/timeline/timeline_page.dart` | Chronological memory list |
+| `lib/features/search/search_page.dart` | Live search |
+| `lib/features/memory_detail/memory_detail_page.dart` | Detail + Share |
+| `lib/features/logger/logger_page.dart` | Dev sensor recorder UI |
+| `lib/features/sessions/sessions_page.dart` | Dev session list + upload |
+| `lib/features/session_detail/session_detail_page.dart` | Replay + charts |
+| `lib/widgets/memory_card.dart` | Shared `MemoryCard`, `memoryIcon()`, `memoryColor()` |
+| `lib/services/foreground_task.dart` | Background recording isolate |
+
+### Dependencies
 
 | Package | Version | Purpose |
 |---------|---------|---------|
 | `go_router` | ^14.6.2 | Navigation |
-| `flutter_map` | ^8.1.1 | Map (OSM raster tiles) |
-| `latlong2` | ^0.9.1 | LatLng types for flutter_map |
+| `sensors_plus` | ^6.1.1 | IMU (accel/gyro/mag) |
+| `flutter_blue_plus` | ^1.35.3 | BLE scan |
+| `path_provider` | ^2.1.4 | Local file paths |
+| `http` | ^1.2.0 | Session upload |
 | `permission_handler` | ^11.3.1 | Runtime permissions |
-| `geolocator` | ^13.0.2 | Current location |
+| `flutter_foreground_task` | ^8.0.0 | Background recording |
 | `flutter_svg` | ^2.0.16 | SVG logo |
+| `geolocator` | ^13.0.1 | GPS location |
+| `flutter_map` | ^7.0.2 | Map tiles |
+| `latlong2` | ^0.9.0 | LatLng types |
+| `url_launcher` | ^6.3.0 | Open in Maps |
+| `share_plus` | ^10.1.0 | Native share sheet |
 
-**Note:** `maplibre_gl` was removed — it uses the removed Flutter v1 Android embedding API (`PluginRegistry.Registrar`) and fails to build on Flutter 3.x / Android API 36.
+### Map tile URLs
 
-AndroidManifest: `ACCESS_FINE_LOCATION` + `ACCESS_COARSE_LOCATION` declared.
+- Light: `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png` (CARTO Positron)
+- Dark: `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png` (CARTO Dark Matter)
+- Subdomains: `a, b, c, d` · No API key required
 
----
+### Memory model
 
-## apps/mobile.v0 (Clue SL — active)
-
-**Status:** Sensor recording fully implemented. Runs and saves sessions locally on device.
-
-Package name: `clue_sl` · Org: `com.clue` · Platforms: Android + iOS
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `go_router` | ^14.6.2 | Navigation |
-| `sensors_plus` | ^6.1.1 | Accelerometer, gyroscope, magnetometer, barometer |
-| `flutter_blue_plus` | ^1.35.3 | BLE scanning |
-| `path_provider` | ^2.1.4 | Local session file paths |
-
-Structure:
-```
-lib/
-├── main.dart
-├── app.dart                                   # Router + shell + /sessions/:id outside shell
-├── config.dart                                # kBackendUrl (set to LAN IP or server URL)
-├── models/session.dart                        # Session, Vec3, Sample<T>, BleDevice
-├── services/
-│   ├── session_repository.dart               # Save / load / delete sessions as JSON
-│   └── api_client.dart                       # POST /api/sessions upload
-└── features/
-    ├── logger/
-    │   ├── logger_controller.dart             # ChangeNotifier — recording lifecycle
-    │   └── logger_page.dart                  # Record/stop UI + live sensor readout
-    ├── sessions/sessions_page.dart            # List + Upload All + slide-out animation
-    └── session_detail/session_detail_page.dart  # Replay tab + Charts tab
-```
-
-Dependencies: `go_router`, `sensors_plus`, `flutter_blue_plus`, `path_provider`, `http`, `permission_handler`, `flutter_foreground_task`
-
-AndroidManifest permissions:
-- `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`
-- `BLUETOOTH`, `BLUETOOTH_ADMIN` (≤API 30)
-- `BLUETOOTH_SCAN`, `BLUETOOTH_CONNECT` (API 31+)
-- `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SENSOR`, `WAKE_LOCK`
-- `POST_NOTIFICATIONS` (Android 13+)
-
-Usability features (#8):
-- Runtime permission request on first record via `permission_handler`
-- Foreground service via `flutter_foreground_task` — keeps recording alive in background, shows persistent notification with elapsed time and Stop button
-- Stop button sends `'stop'` via inter-isolate channel → `LoggerController._onTaskData` calls `stop()`
-- Upload reminder MaterialBanner on Sessions page for sessions > 5 min
-- Live sample count row on Logger page during recording
-
-VS Code launch configs: `clue SL (debug/profile/release)` — `cwd: apps/mobile.v0`
+Stored in `Documents/clue_memories/<id>.json`. Fields:
+- `id` (ms timestamp string), `label`, `iconType`, `note?`, `lat?`, `lng?`, `bleDevices[]`, `timestamp`
+- Icon types: `item` (amber) · `place` (emerald) · `parking` (blue) · `gate` (orange) · `outlet` (yellow) · `restroom` (violet) · `other` (gray)
 
 ---
 
-## Rust crates
+## Infrastructure
 
-Workspace compiles. Run `cargo test -p sensors` to verify (3 tests).
+### Backend (Hetzner CX23)
 
-| Crate | Path | Status |
-|-------|------|--------|
-| `sensors` | `crates/sensors/` | Types defined — `Session`, `AccelSample`, `GyroSample`, `MagSample`, `BaroSample`, `BleSample`, 3 unit tests |
-| `pdr` | `crates/pdr/` | Stub — Phase 3 |
-| `fingerprint` | `crates/fingerprint/` | Stub — Phase 7 |
-| `mapping` | `crates/mapping/` | Stub — Phase 5 |
-| `localization` | `crates/localization/` | Stub — Phase 8 |
+- IPv4: `37.27.255.248` · SSH: `static.248.255.27.37.clients.your-server.de`
+- Docker Compose: multi-stage Rust build + postgres:16-alpine
+- Routes: `GET /health` · `POST /api/sessions` · `GET /api/sessions` · `GET /api/sessions/:id`
+- Session `baro` field is `#[serde(default)]` — upload works without barometer data
+- CD: GitHub Actions deploy on push to `backend/**` or `Dockerfile` paths
 
-## Backend
+### CI/CD
 
-Axum + SQLx backend implemented and verified running locally.
+- `.github/workflows/ci.yml` — `flutter analyze` + `flutter test` on `apps/mobile.v0/**` changes
+- `.github/workflows/deploy.yml` — SSH to Hetzner on `backend/**` changes → git pull + docker compose up --build -d + health check
 
-Routes:
-- `GET  /health` — liveness check
-- `POST /api/sessions` — upload a `Session` (JSON body; `baro` field optional via `#[serde(default)]`)
-- `GET  /api/sessions` — list sessions (id, timestamps, sample count)
-- `GET  /api/sessions/:id` — retrieve full session JSON
+### Rust
 
-Migration: `backend/migrations/0001_create_sessions.sql` — runs automatically on first boot.
-
-Schema: `sessions(id UUID PK, started_at_ms, duration_ms, sample_count, data JSONB, recorded_at)`
-
-Note: if session `id` is not a valid UUID, the backend generates one (line 24, `routes/sessions.rs`).
-
-## Database
-
-PostgreSQL installed and running locally. Upload from device confirmed working.
-
-## CI
-
-Not configured.
+- Workspace compiles. `cargo test -p sensors` passes (3 tests).
+- `crates/sensors` — real types: `Session`, `Vec3`, `Sample<T>`, sensor aliases
+- `crates/pdr`, `fingerprint`, `mapping`, `localization` — stubs (Phase 3+)
 
 ---
 
-## Decisions Made
+## Decisions
 
 | Decision | Reason |
 |----------|--------|
-| `maplibre_gl` → `flutter_map` | maplibre_gl 0.20.0 uses removed v1 Android plugin API |
-| Sensor logger in `apps/mobile.v0` | Separate app keeps it clean from the map prototype |
-| `sensors_plus` for IMU | Standard Flutter sensor package, covers all required streams |
-| `flutter_blue_plus` for BLE | Most maintained BLE package for Flutter |
-| `http` for upload | Minimal dep, sufficient for single POST endpoint |
-| Barometer + Wi-Fi not in Clue SL scope | Not in GitHub milestone issues |
-| Local session format | JSON per session — one file per session in `Documents/clue_sessions/<id>.json` |
-| `Session.baro` is `#[serde(default)]` | Accepts uploads from clients that don't record barometer |
-| Session detail outside ShellRoute | No bottom nav on detail page — clean back-button UX |
-| Charts use `CustomPainter` | Avoids charting library dependency; sufficient for magnitude plots |
-| Trajectory rendering deferred | Spatial path requires PDR (Phase 3); current charts show magnitude over time |
+| `maplibre_gl` → `flutter_map` | maplibre uses removed v1 Android plugin API |
+| Sensor logger in `apps/mobile.v0` | Separate from map prototype in `apps/mobile` |
+| CARTO tiles (no API key) | Stadia requires account; CARTO Positron/Dark Matter free |
+| Share via `share_plus` | Native platform share sheet, no custom UI needed |
+| Session detail outside ShellRoute | No bottom nav on detail page |
+| Charts with `CustomPainter` | No extra dependency |
 | Commit style | `[#<issue>] - <message>` |
+| Memory App MVP scope | GPS + BLE context at capture; no floor plans or PDR yet |
+| Dev routes hidden at `/dev/*` | User-facing UI never shows sensor terminology |
 
 ---
 
-## Open Questions
+## Open Questions / Next Steps
 
-- When to introduce Rust FFI — before or after first real session is recorded?
+- **Dogfooding**: use the app in real indoor environments — find pain points before adding features
+- **Phase 3 (Dead Reckoning)**: step detection from accelerometer, heading from gyro+mag, PDR path reconstruction — requires 100+ real sessions first
+- **App distribution** (#7): still using `flutter run` / sideloaded APK; Play Store / TestFlight not set up
+- **Multilanguage** (#9 comment): deferred to future milestone
