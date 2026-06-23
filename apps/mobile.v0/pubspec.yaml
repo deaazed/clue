@@ -45,6 +45,9 @@ dependencies:
   # Open native maps app
   url_launcher: ^6.3.0
 
+  # Share memories via native share sheet
+  share_plus: ^10.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

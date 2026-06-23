@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/memory.dart';
 import '../../widgets/memory_card.dart';
@@ -48,6 +49,34 @@ class _MemoryDetailPageState extends State<MemoryDetailPage> {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
+  void _share() {
+    final m = widget.memory;
+    final lines = <String>[m.label];
+
+    final typeLabel = switch (m.iconType) {
+      'item' => 'Item',
+      'place' => 'Place',
+      'parking' => 'Parking',
+      'gate' => 'Gate',
+      'outlet' => 'Outlet',
+      'restroom' => 'Restroom',
+      _ => 'Other',
+    };
+    lines.add('$typeLabel · ${_fmtDate(m.timestamp)}');
+
+    if (m.note != null) {
+      lines.add('');
+      lines.add(m.note!);
+    }
+
+    if (m.lat != null) {
+      lines.add('');
+      lines.add('https://maps.google.com/?q=${m.lat},${m.lng}');
+    }
+
+    Share.share(lines.join('\n'));
+  }
+
   @override
   Widget build(BuildContext context) {
     final m = widget.memory;
@@ -59,8 +88,20 @@ class _MemoryDetailPageState extends State<MemoryDetailPage> {
         title: Text(m.label),
         backgroundColor: cs.surface,
         surfaceTintColor: Colors.transparent,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share_outlined),
+            tooltip: 'Share',
+            onPressed: _share,
+          ),
+        ],
       ),
-      body: ListView(
+      body: Builder(builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final tileUrl = isDark
+            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+            : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
+        return ListView(
         children: [
           if (m.lat != null)
             SizedBox(
@@ -72,8 +113,8 @@ class _MemoryDetailPageState extends State<MemoryDetailPage> {
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate:
-                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    urlTemplate: tileUrl,
+                    subdomains: const ['a', 'b', 'c', 'd'],
                     userAgentPackageName: 'com.clue',
                   ),
                   MarkerLayer(
@@ -178,7 +219,8 @@ class _MemoryDetailPageState extends State<MemoryDetailPage> {
             ),
           ),
         ],
-      ),
+      );
+      }),
     );
   }
 
