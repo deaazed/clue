@@ -91,6 +91,10 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tileUrl = isDark
+        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+        : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
     final pinned = _memories.where((m) => m.lat != null).toList();
 
     return Scaffold(
@@ -105,8 +109,8 @@ class _HomePageState extends State<HomePage> {
             ),
             children: [
               TileLayer(
-                urlTemplate:
-                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                urlTemplate: tileUrl,
+                subdomains: const ['a', 'b', 'c', 'd'],
                 userAgentPackageName: 'com.clue',
               ),
               MarkerLayer(
@@ -183,16 +187,20 @@ class _HomePageState extends State<HomePage> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (_userPosition != null) ...[
-            FloatingActionButton.small(
-              heroTag: 'locate',
-              backgroundColor: Colors.white,
-              foregroundColor: cs.primary,
-              onPressed: () => _mapController.move(_userPosition!, 16),
-              child: const Icon(Icons.my_location),
+          FloatingActionButton.small(
+            heroTag: 'locate',
+            backgroundColor: Colors.white,
+            foregroundColor: cs.primary,
+            onPressed: _userPosition != null
+                ? () => _mapController.move(_userPosition!, 16)
+                : _locateUser,
+            child: Icon(
+              _userPosition != null
+                  ? Icons.my_location
+                  : Icons.location_searching,
             ),
-            const SizedBox(height: 10),
-          ],
+          ),
+          const SizedBox(height: 10),
           FloatingActionButton.extended(
             heroTag: 'save',
             onPressed: _showSave,

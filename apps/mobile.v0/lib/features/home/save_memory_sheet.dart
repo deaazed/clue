@@ -46,8 +46,6 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
     super.dispose();
   }
 
-  // Only save location if we already have a recent, accurate fix.
-  // Avoids blocking the save flow with a GPS request.
   Future<Position?> _getPosition() async {
     try {
       final last = await Geolocator.getLastKnownPosition();
@@ -55,8 +53,16 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
         final age = DateTime.now().difference(last.timestamp);
         if (age.inMinutes <= 15) return last;
       }
-    } catch (_) {}
-    return null;
+      // Last known was missing or stale — get a fresh fix
+      return await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 5),
+        ),
+      );
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<List<String>> _bleScan() async {
