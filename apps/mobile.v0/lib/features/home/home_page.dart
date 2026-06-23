@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/memory.dart';
 import '../../services/memory_repository.dart';
 import '../../widgets/memory_card.dart';
@@ -14,17 +17,47 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<Memory> _recent = [];
+  List<Memory> _memories = [];
+  LatLng? _userPosition;
+  final _mapController = MapController();
 
   @override
   void initState() {
     super.initState();
     _load();
+    _locateUser();
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
     final all = await MemoryRepository.loadAll();
-    if (mounted) setState(() => _recent = all.take(5).toList());
+    if (mounted) setState(() => _memories = all);
+  }
+
+  Future<void> _locateUser() async {
+    try {
+      final last = await Geolocator.getLastKnownPosition();
+      if (last != null && mounted) {
+        _setPosition(LatLng(last.latitude, last.longitude));
+      }
+      final fresh = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 8),
+        ),
+      );
+      if (mounted) _setPosition(LatLng(fresh.latitude, fresh.longitude));
+    } catch (_) {}
+  }
+
+  void _setPosition(LatLng ll) {
+    setState(() => _userPosition = ll);
+    try { _mapController.move(ll, 16); } catch (_) {}
   }
 
   Future<void> _showSave() async {
@@ -37,148 +70,265 @@ class _HomePageState extends State<HomePage> {
     _load();
   }
 
+  void _onPinTap(Memory m) {
+    showModalBottomSheet(
+      context: context,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _PinSheet(
+        memory: m,
+        userPosition: _userPosition,
+        onDetails: () {
+          Navigator.pop(context);
+          context.push('/memory', extra: m);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final pinned = _memories.where((m) => m.lat != null).toList();
+
     return Scaffold(
-      body: SafeArea(
-        child: ListView(
-          children: [
-            _Header(cs: cs, onSearchTap: () => context.go('/search')),
-            if (_recent.isEmpty)
-              _EmptyState(cs: cs)
-            else ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
-                child: Text(
-                  'RECENT',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: cs.onSurfaceVariant,
-                    letterSpacing: 1.2,
+      body: Stack(
+        children: [
+          // Full-screen map
+          FlutterMap(
+            mapController: _mapController,
+            options: const MapOptions(
+              initialCenter: LatLng(48.8566, 2.3522),
+              initialZoom: 5,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate:
+                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.clue',
+              ),
+              MarkerLayer(
+                markers: [
+                  ...pinned.map(
+                    (m) => Marker(
+                      point: LatLng(m.lat!, m.lng!),
+                      width: 44,
+                      height: 44,
+                      child: GestureDetector(
+                        onTap: () => _onPinTap(m),
+                        child: _Pin(iconType: m.iconType),
+                      ),
+                    ),
+                  ),
+                  if (_userPosition != null)
+                    Marker(
+                      point: _userPosition!,
+                      width: 20,
+                      height: 20,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: cs.primary,
+                          shape: BoxShape.circle,
+                          border:
+                              Border.all(color: Colors.white, width: 3),
+                          boxShadow: [
+                            BoxShadow(
+                              blurRadius: 8,
+                              color: cs.primary.withValues(alpha: 0.35),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+
+          // Search bar overlay
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: GestureDetector(
+                onTap: () => context.go('/search'),
+                child: Material(
+                  elevation: 3,
+                  shadowColor: Colors.black26,
+                  borderRadius: BorderRadius.circular(14),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
+                    child: Row(
+                      children: [
+                        Icon(Icons.search,
+                            color: cs.onSurfaceVariant, size: 20),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Search memories…',
+                          style: TextStyle(
+                              color: cs.onSurfaceVariant, fontSize: 15),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-              ..._recent.map(
-                (m) => MemoryCard(
-                  memory: m,
-                  onTap: () => context.push('/memory', extra: m),
-                ),
-              ),
-              const SizedBox(height: 100),
-            ],
-          ],
-        ),
+            ),
+          ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showSave,
-        icon: const Icon(Icons.add),
-        label: const Text('Save Memory'),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (_userPosition != null) ...[
+            FloatingActionButton.small(
+              heroTag: 'locate',
+              backgroundColor: Colors.white,
+              foregroundColor: cs.primary,
+              onPressed: () => _mapController.move(_userPosition!, 16),
+              child: const Icon(Icons.my_location),
+            ),
+            const SizedBox(height: 10),
+          ],
+          FloatingActionButton.extended(
+            heroTag: 'save',
+            onPressed: _showSave,
+            icon: const Icon(Icons.add),
+            label: const Text('Save Memory'),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _Header extends StatelessWidget {
-  const _Header({required this.cs, required this.onSearchTap});
-  final ColorScheme cs;
-  final VoidCallback onSearchTap;
+class _Pin extends StatelessWidget {
+  const _Pin({required this.iconType});
+  final String iconType;
 
   @override
   Widget build(BuildContext context) {
+    final color = memoryColor(iconType);
+    return Container(
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2.5),
+        boxShadow: const [BoxShadow(blurRadius: 6, color: Colors.black26)],
+      ),
+      child: Icon(memoryIcon(iconType), color: Colors.white, size: 20),
+    );
+  }
+}
+
+class _PinSheet extends StatelessWidget {
+  const _PinSheet({
+    required this.memory,
+    required this.userPosition,
+    required this.onDetails,
+  });
+
+  final Memory memory;
+  final LatLng? userPosition;
+  final VoidCallback onDetails;
+
+  double? get _dist {
+    if (userPosition == null) return null;
+    return Geolocator.distanceBetween(
+      userPosition!.latitude, userPosition!.longitude,
+      memory.lat!, memory.lng!,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final color = memoryColor(memory.iconType);
+    final dist = _dist;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SvgPicture.asset(
-                'assets/logo-clue.svg',
-                width: 28,
-                height: 28,
-                colorFilter: ColorFilter.mode(cs.primary, BlendMode.srcIn),
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(memoryIcon(memory.iconType),
+                    color: color, size: 24),
               ),
-              const SizedBox(width: 8),
-              Text(
-                'Clue',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w700,
-                  color: cs.onSurface,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      memory.label,
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.w700),
+                    ),
+                    if (dist != null)
+                      Text(
+                        _fmtDist(dist),
+                        style: TextStyle(
+                          color: cs.primary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Your indoor memory',
-            style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
-          ),
-          const SizedBox(height: 20),
-          GestureDetector(
-            onTap: onSearchTap,
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.search, color: cs.onSurfaceVariant, size: 20),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Search memories…',
-                    style:
-                        TextStyle(color: cs.onSurfaceVariant, fontSize: 15),
-                  ),
-                ],
-              ),
+          if (memory.note != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              memory.note!,
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 14),
             ),
+          ],
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onDetails,
+                  icon: const Icon(Icons.info_outline, size: 18),
+                  label: const Text('Details'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () async {
+                    final uri = Uri.parse(
+                        'https://maps.google.com/?q=${memory.lat},${memory.lng}');
+                    await launchUrl(uri,
+                        mode: LaunchMode.externalApplication);
+                  },
+                  icon: const Icon(Icons.directions, size: 18),
+                  label: const Text('Navigate'),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
-}
 
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.cs});
-  final ColorScheme cs;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 80),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SvgPicture.asset(
-            'assets/logo-clue.svg',
-            width: 72,
-            height: 72,
-            colorFilter:
-                ColorFilter.mode(cs.outlineVariant, BlendMode.srcIn),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'No memories yet',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: cs.onSurface,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tap + to save your first memory',
-            style: TextStyle(color: cs.onSurfaceVariant),
-          ),
-        ],
-      ),
-    );
-  }
+  String _fmtDist(double m) =>
+      m < 1000 ? '${m.toStringAsFixed(0)} m away' : '${(m / 1000).toStringAsFixed(1)} km away';
 }

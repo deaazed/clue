@@ -46,17 +46,17 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
     super.dispose();
   }
 
+  // Only save location if we already have a recent, accurate fix.
+  // Avoids blocking the save flow with a GPS request.
   Future<Position?> _getPosition() async {
     try {
-      return await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.lowest,
-          timeLimit: Duration(seconds: 5),
-        ),
-      );
-    } catch (_) {
-      return null;
-    }
+      final last = await Geolocator.getLastKnownPosition();
+      if (last != null && last.accuracy <= 150) {
+        final age = DateTime.now().difference(last.timestamp);
+        if (age.inMinutes <= 15) return last;
+      }
+    } catch (_) {}
+    return null;
   }
 
   Future<List<String>> _bleScan() async {
@@ -67,8 +67,8 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
         for (final r in results) { devices.add(r.device.remoteId.str); }
       });
       await FlutterBluePlus.startScan(
-          timeout: const Duration(seconds: 2));
-      await Future.delayed(const Duration(seconds: 2));
+          timeout: const Duration(milliseconds: 1500));
+      await Future.delayed(const Duration(milliseconds: 1500));
     } catch (_) {
       // BLE unavailable or permissions not yet granted — save without it
     } finally {

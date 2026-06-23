@@ -33,7 +33,7 @@ class MemoryCard extends StatelessWidget {
     final color = memoryColor(memory.iconType);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Material(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
@@ -41,20 +41,20 @@ class MemoryCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(12),
             child: Row(
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(11),
                   ),
                   child: Icon(memoryIcon(memory.iconType),
-                      color: color, size: 24),
+                      color: color, size: 22),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -62,7 +62,7 @@ class MemoryCard extends StatelessWidget {
                       Text(
                         memory.label,
                         style: const TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 15),
+                            fontWeight: FontWeight.w700, fontSize: 16),
                       ),
                       if (memory.note != null) ...[
                         const SizedBox(height: 2),
@@ -100,7 +100,8 @@ class MemoryCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right, color: cs.outlineVariant, size: 20),
+                const SizedBox(width: 4),
+                Icon(Icons.chevron_right, color: cs.outlineVariant, size: 18),
               ],
             ),
           ),
