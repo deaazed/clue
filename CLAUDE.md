@@ -98,15 +98,15 @@ Milestone 1 issues: [#1](https://github.com/deaazed/clue/issues/1) ✅ · [#2](h
 
 Milestone 2 issues: [#9 Vision](https://github.com/deaazed/clue/issues/9) ✅ · [#10 Save Memory](https://github.com/deaazed/clue/issues/10) ✅ · [#11 Timeline](https://github.com/deaazed/clue/issues/11) ✅ · [#12 Search](https://github.com/deaazed/clue/issues/12) ✅ · [#13 Return](https://github.com/deaazed/clue/issues/13) ✅ · [#14 Share](https://github.com/deaazed/clue/issues/14) ✅
 
-**Milestone 3: [Clue — UX Polish + Indoor Maps](https://github.com/deaazed/clue/milestone/3)** 🔜 NEXT
+**Milestone 3: [Clue — UX Polish + Indoor Maps](https://github.com/deaazed/clue/milestone/3)** ✅ COMPLETE
 
-Milestone 3 issues: [#15 UX redesign](https://github.com/deaazed/clue/issues/15) · [#16 Mapbox indoor map](https://github.com/deaazed/clue/issues/16)
+Milestone 3 issues: [#15 UX redesign](https://github.com/deaazed/clue/issues/15) ✅ · [#16 PMTiles indoor map](https://github.com/deaazed/clue/issues/16) ✅
 
 ---
 
 ## Current State (as of 2026-06-24)
 
-**Current phase:** Milestone 3 open — UX Polish + Indoor Maps (#15 UX redesign, #16 Mapbox vector tiles).
+**Current phase:** Milestone 3 complete. Next: Milestone 4 (Dead Reckoning / Phase 3).
 
 ### CI/CD
 
@@ -195,14 +195,14 @@ Sensor recording (dev):
 | 1 | Sensor Logger | 2 weeks | **Done** (Milestone 1 closed) |
 | 1.5 | Memory App MVP | — | **Done** (Milestone 2 closed) |
 | 2 | Replay System | 2 weeks | **Done** (session detail + charts) |
-| 2.5 | UX Polish + Indoor Maps | — | **In progress** (Milestone 3: #15 #16) |
+| 2.5 | UX Polish + Indoor Maps | — | **Done** (Milestone 3 closed: #15 #16) |
 | 3 | Dead Reckoning | 4 weeks | Not started |
 | 4 | Indoor Visualization | 2 weeks | Not started |
 | 5 | Collaborative Mapping | 4 weeks | Not started |
 | 7 | Fingerprinting | 4 weeks | Not started |
 | 8 | Advanced Localization | 4 weeks | Not started |
 
-**Next priority:** Milestone 3 — UX polish (#15) then Mapbox indoor map (#16).
+**Next priority:** Milestone 4 — Dead Reckoning (Phase 3): PDR crate, trajectory rendering, VPS tile setup.
 
 ---
 
@@ -246,6 +246,11 @@ Budget constraint: **€15/month**, max €250/year.
 - Share feature uses `share_plus` v10 API: `Share.share(text)` (not ShareParams, which is v11+)
 - Multilanguage deferred to a future milestone
 - Indoor map (#16): self-hosted PMTiles on VPS via Caddy static file + byte-range. Mapbox rejected (external dependency, API key). MapCache rejected (caching proxy only, doesn't add zoom or indoor data). MapServer rejected (heavy OGC stack, overkill). PMTiles uses same OSM indoor data as Mapbox, keeps flutter_map, zero running cost, Phase 4 floor plan overlays served from same VPS
+- Vector tile stack: `vector_map_tiles: ^8.0.0` + `vector_map_tiles_pmtiles: ^1.5.0`; `PmTilesVectorTileProvider.fromSource(kTilesUrl)`; `ProtomapsThemes.lightV4()` / `darkV4()` (v4 schema); CARTO raster as FutureBuilder fallback while provider initialises
+- AppSpacing: 4 px base grid — xs=4, sm=8, md=16, lg=24, xl=32, xxl=48; cardRadius=16, sheetRadius=24, iconRadius=12
+- BottomSheetThemeData: global `showDragHandle: true`, `dragHandleSize: Size(32,4)`, `RoundedRectangleBorder(radius: 24)` — no per-sheet shape needed
+- Hero animations: `hero_icon_${memory.id}` tag on MemoryCard icon container → MemoryDetailPage header icon (52×52)
+- Search is a pushed full-screen route (`context.push('/search')`) outside ShellRoute — shows all memories when query empty (browse mode)
 
 ---
 
