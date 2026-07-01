@@ -57,10 +57,10 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: false
-  image_path: "assets/logo-clue.png"
+  image_path: "assets/icon-clue.png"
   min_sdk_android: 21
-  adaptive_icon_background: "#3F51B5"
-  adaptive_icon_foreground: "assets/logo-clue.png"
+  adaptive_icon_background: "#FBF7F0"
+  adaptive_icon_foreground: "assets/icon-clue-fg.png"
 
 flutter:
   uses-material-design: true
