@@ -1,10 +1,17 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:path_provider/path_provider.dart';
 import 'app.dart';
 
-void main() {
+bool kIsFirstLaunch = false;
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   FlutterForegroundTask.initCommunicationPort();
+
+  final dir = await getApplicationDocumentsDirectory();
+  kIsFirstLaunch = !File('${dir.path}/clue_onboarded').existsSync();
 
   // vector_map_tiles cancels in-flight tile requests during map movement.
   // Flutter surfaces these as errors via the image resource service, but

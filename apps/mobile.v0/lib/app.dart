@@ -8,10 +8,12 @@ import 'features/search/search_page.dart';
 import 'features/places/places_page.dart';
 import 'features/place_detail/place_detail_page.dart';
 import 'features/clue_recording/clue_recording_page.dart';
+import 'features/onboarding/onboarding_page.dart';
 import 'features/logger/logger_page.dart';
 import 'features/sessions/sessions_page.dart';
 import 'features/session_detail/session_detail_page.dart';
 import 'features/memory_detail/memory_detail_page.dart';
+import 'main.dart' show kIsFirstLaunch;
 import 'models/memory.dart';
 import 'models/place.dart';
 import 'models/session.dart';
@@ -20,7 +22,17 @@ import 'theme/spacing.dart';
 
 final _router = GoRouter(
   initialLocation: '/home',
+  redirect: (context, state) {
+    if (kIsFirstLaunch && state.uri.path != '/onboarding') {
+      return '/onboarding';
+    }
+    return null;
+  },
   routes: [
+    GoRoute(
+      path: '/onboarding',
+      builder: (c, s) => const OnboardingPage(),
+    ),
     ShellRoute(
       builder: (context, state, child) => _Shell(child: child),
       routes: [
