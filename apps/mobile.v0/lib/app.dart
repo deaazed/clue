@@ -5,11 +5,15 @@ import 'package:google_fonts/google_fonts.dart';
 import 'features/home/home_page.dart';
 import 'features/timeline/timeline_page.dart';
 import 'features/search/search_page.dart';
+import 'features/places/places_page.dart';
+import 'features/place_detail/place_detail_page.dart';
+import 'features/clue_recording/clue_recording_page.dart';
 import 'features/logger/logger_page.dart';
 import 'features/sessions/sessions_page.dart';
 import 'features/session_detail/session_detail_page.dart';
 import 'features/memory_detail/memory_detail_page.dart';
 import 'models/memory.dart';
+import 'models/place.dart';
 import 'models/session.dart';
 import 'theme/colors.dart';
 import 'theme/spacing.dart';
@@ -23,7 +27,7 @@ final _router = GoRouter(
         GoRoute(path: '/home', builder: (c, s) => const HomePage()),
         GoRoute(path: '/timeline', builder: (c, s) => const TimelinePage()),
         GoRoute(path: '/search', builder: (c, s) => const SearchPage()),
-        GoRoute(path: '/places', builder: (c, s) => const _PlacesPlaceholder()),
+        GoRoute(path: '/places', builder: (c, s) => const PlacesPage()),
         GoRoute(path: '/dev/logger', builder: (c, s) => const LoggerPage()),
         GoRoute(path: '/dev/sessions', builder: (c, s) => const SessionsPage()),
       ],
@@ -31,6 +35,14 @@ final _router = GoRouter(
     GoRoute(
       path: '/memory',
       builder: (_, state) => MemoryDetailPage(memory: state.extra as Memory),
+    ),
+    GoRoute(
+      path: '/place',
+      builder: (_, state) => PlaceDetailPage(place: state.extra as Place),
+    ),
+    GoRoute(
+      path: '/record',
+      builder: (_, state) => CluePinRecordingPage(place: state.extra as Place),
     ),
     GoRoute(
       path: '/sessions/:id',
@@ -254,30 +266,6 @@ class _NavItem extends StatelessWidget {
                 fontFamily: GoogleFonts.hankenGrotesk().fontFamily,
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Placeholder for the Places tab — full venue list comes in #24
-class _PlacesPlaceholder extends StatelessWidget {
-  const _PlacesPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Places')),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.business_outlined, size: 52, color: cs.outlineVariant),
-            const SizedBox(height: AppSpacing.md),
-            Text('Coming soon',
-                style: TextStyle(color: cs.onSurfaceVariant)),
           ],
         ),
       ),

@@ -10,6 +10,7 @@ class Memory {
   final List<String> bleDevices;
   final DateTime timestamp;
   final List<LatLng>? path;
+  final String? placeId;
 
   const Memory({
     required this.id,
@@ -21,6 +22,7 @@ class Memory {
     this.bleDevices = const [],
     required this.timestamp,
     this.path,
+    this.placeId,
   });
 
   factory Memory.fromJson(Map<String, dynamic> json) => Memory(
@@ -43,6 +45,7 @@ class Memory {
             (m['lng'] as num).toDouble(),
           );
         }).toList(),
+        placeId: json['place_id'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -58,5 +61,6 @@ class Memory {
           'path': path!
               .map((p) => {'lat': p.latitude, 'lng': p.longitude})
               .toList(),
+        if (placeId != null) 'place_id': placeId,
       };
 }

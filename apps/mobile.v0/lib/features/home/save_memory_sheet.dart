@@ -1,10 +1,8 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import '../../models/memory.dart';
+import '../../models/place.dart';
 import '../../services/memory_repository.dart';
 import '../../theme/colors.dart';
 import '../../widgets/memory_card.dart' show memoryIcon;
@@ -17,7 +15,18 @@ const _iconLabels = [
 ];
 
 class SaveMemorySheet extends StatefulWidget {
-  const SaveMemorySheet({super.key});
+  const SaveMemorySheet({
+    super.key,
+    required this.place,
+    required this.endpoint,
+    required this.path,
+    required this.bleDevices,
+  });
+
+  final Place place;
+  final LatLng endpoint;
+  final List<LatLng> path;
+  final List<String> bleDevices;
 
   @override
   State<SaveMemorySheet> createState() => _SaveMemorySheetState();
@@ -31,100 +40,32 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
   bool _isPublic = true;
   String? _error;
 
-  // Path recording — accumulate GPS breadcrumbs while the sheet is open
-  final List<LatLng> _pathPoints = [];
-  StreamSubscription<Position>? _positionSub;
-
-  @override
-  void initState() {
-    super.initState();
-    _positionSub = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.bestForNavigation,
-        distanceFilter: 2,
-      ),
-    ).listen(
-      (pos) {
-        if (mounted) _pathPoints.add(LatLng(pos.latitude, pos.longitude));
-      },
-      onError: (_) {},
-    );
-  }
-
   @override
   void dispose() {
-    _positionSub?.cancel();
     _labelCtrl.dispose();
     _noteCtrl.dispose();
     super.dispose();
   }
 
-  Future<Position?> _getPosition() async {
-    try {
-      final last = await Geolocator.getLastKnownPosition();
-      if (last != null && last.accuracy <= 150) {
-        final age = DateTime.now().difference(last.timestamp);
-        if (age.inMinutes <= 15) return last;
-      }
-      return await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.medium,
-          timeLimit: Duration(seconds: 5),
-        ),
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<List<String>> _bleScan() async {
-    final devices = <String>{};
-    StreamSubscription? sub;
-    try {
-      sub = FlutterBluePlus.scanResults.listen((results) {
-        for (final r in results) {
-          devices.add(r.device.remoteId.str);
-        }
-      });
-      await FlutterBluePlus.startScan(
-          timeout: const Duration(milliseconds: 1500));
-      await Future.delayed(const Duration(milliseconds: 1500));
-    } catch (_) {
-    } finally {
-      await sub?.cancel();
-      try {
-        await FlutterBluePlus.stopScan();
-      } catch (_) {}
-    }
-    return devices.toList();
-  }
-
   Future<void> _save() async {
     final label = _labelCtrl.text.trim();
     if (label.isEmpty) {
-      setState(() => _error = 'Please enter a label');
+      setState(() => _error = 'Add a name for this clue');
       return;
     }
-    setState(() {
-      _saving = true;
-      _error = null;
-    });
-
-    final posFuture = _getPosition();
-    final bleFuture = _bleScan();
-    final pos = await posFuture;
-    final ble = await bleFuture;
+    setState(() { _saving = true; _error = null; });
 
     final memory = Memory(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       label: label,
       iconType: _selectedIcon,
       note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
-      lat: pos?.latitude,
-      lng: pos?.longitude,
-      bleDevices: ble,
+      lat: widget.endpoint.latitude,
+      lng: widget.endpoint.longitude,
+      bleDevices: widget.bleDevices,
       timestamp: DateTime.now(),
-      path: _pathPoints.length >= 2 ? List.unmodifiable(_pathPoints) : null,
+      path: widget.path.length >= 2 ? widget.path : null,
+      placeId: widget.place.id,
     );
 
     await MemoryRepository.save(memory);
@@ -163,12 +104,12 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
           ),
           const SizedBox(height: 2),
           Text(
-            'Save where something is',
+            widget.place.name,
             style: TextStyle(fontSize: 12.5, color: mutedColor),
           ),
           const SizedBox(height: 18),
 
-          // Category picker — fixed-width chips so they're all the same size
+          // Category picker — fixed-width chips
           SizedBox(
             height: 62,
             child: ListView.separated(
@@ -194,11 +135,8 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          memoryIcon(type),
-                          size: 18,
-                          color: selected ? ClueColors.amber : mutedColor,
-                        ),
+                        Icon(memoryIcon(type), size: 18,
+                            color: selected ? ClueColors.amber : mutedColor),
                         const SizedBox(height: 4),
                         Text(
                           _iconLabels[i],
@@ -217,7 +155,7 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
           ),
           const SizedBox(height: 13),
 
-          // Name field — short required label
+          // Name field
           _Field(
             label: 'NAME',
             cardBg: cardBg,
@@ -228,7 +166,7 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
               textCapitalization: TextCapitalization.sentences,
               style: TextStyle(fontSize: 15, color: inkColor, fontWeight: FontWeight.w600),
               decoration: InputDecoration.collapsed(
-                hintText: 'e.g. "Oat milk", "Parking spot B3"',
+                hintText: 'e.g. "Oat milk", "Quiet corner"',
                 hintStyle: TextStyle(fontSize: 15, color: mutedColor),
               ),
               onSubmitted: (_) => _save(),
@@ -243,7 +181,7 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
           ],
           const SizedBox(height: 10),
 
-          // Note field — optional, Bricolage for the descriptive text
+          // Note field — Bricolage descriptive text
           _Field(
             label: 'YOUR NOTE',
             cardBg: cardBg,
@@ -291,20 +229,15 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.public,
-                            size: 16,
+                        Icon(Icons.public, size: 16,
                             color: _isPublic ? ClueColors.amber : mutedColor),
                         const SizedBox(width: 7),
-                        Text(
-                          'Public',
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w700,
-                            color: _isPublic
-                                ? const Color(0xFFB0672C)
-                                : mutedColor,
-                          ),
-                        ),
+                        Text('Public',
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w700,
+                              color: _isPublic ? const Color(0xFFB0672C) : mutedColor,
+                            )),
                       ],
                     ),
                   ),
@@ -328,18 +261,15 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.lock_outline,
-                            size: 16,
+                        Icon(Icons.lock_outline, size: 16,
                             color: !_isPublic ? inkColor : mutedColor),
                         const SizedBox(width: 7),
-                        Text(
-                          'Just me',
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w600,
-                            color: !_isPublic ? inkColor : mutedColor,
-                          ),
-                        ),
+                        Text('Just me',
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
+                              color: !_isPublic ? inkColor : mutedColor,
+                            )),
                       ],
                     ),
                   ),
@@ -349,15 +279,13 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
           ),
           const SizedBox(height: 20),
 
-          // CTA
           SizedBox(
             width: double.infinity,
             child: FilledButton(
               onPressed: _saving ? null : _save,
               child: _saving
                   ? const SizedBox(
-                      height: 20,
-                      width: 20,
+                      height: 20, width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
                   : const Text('Drop clue'),
