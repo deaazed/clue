@@ -56,13 +56,10 @@ class _SearchPageState extends State<SearchPage> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
+        automaticallyImplyLeading: false,
         title: TextField(
           controller: _ctrl,
-          autofocus: true,
+          autofocus: false,
           textCapitalization: TextCapitalization.sentences,
           decoration: InputDecoration(
             hintText: 'Search memories…',

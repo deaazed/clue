@@ -1,3 +1,5 @@
+import 'package:latlong2/latlong.dart';
+
 class Memory {
   final String id;
   final String label;
@@ -7,6 +9,7 @@ class Memory {
   final double? lng;
   final List<String> bleDevices;
   final DateTime timestamp;
+  final List<LatLng>? path;
 
   const Memory({
     required this.id,
@@ -17,6 +20,7 @@ class Memory {
     this.lng,
     this.bleDevices = const [],
     required this.timestamp,
+    this.path,
   });
 
   factory Memory.fromJson(Map<String, dynamic> json) => Memory(
@@ -32,6 +36,13 @@ class Memory {
             [],
         timestamp: DateTime.fromMillisecondsSinceEpoch(
             json['timestamp_ms'] as int),
+        path: (json['path'] as List<dynamic>?)?.map((e) {
+          final m = e as Map<String, dynamic>;
+          return LatLng(
+            (m['lat'] as num).toDouble(),
+            (m['lng'] as num).toDouble(),
+          );
+        }).toList(),
       );
 
   Map<String, dynamic> toJson() => {
@@ -43,5 +54,9 @@ class Memory {
         if (lng != null) 'lng': lng,
         'ble_devices': bleDevices,
         'timestamp_ms': timestamp.millisecondsSinceEpoch,
+        if (path != null && path!.length >= 2)
+          'path': path!
+              .map((p) => {'lat': p.latitude, 'lng': p.longitude})
+              .toList(),
       };
 }

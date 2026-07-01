@@ -3,7 +3,6 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:vector_map_tiles/vector_map_tiles.dart';
 import 'package:vector_map_tiles_pmtiles/vector_map_tiles_pmtiles.dart';
 import '../../config.dart';
@@ -25,6 +24,9 @@ class _HomePageState extends State<HomePage> {
   LatLng? _userPosition;
   final _mapController = MapController();
   late final Future<PmTilesVectorTileProvider> _tileProviderFuture;
+  // Zoom threshold: switch to OSM raster above this for indoor room detail.
+  static const _osmZoomThreshold = 14.0;
+  bool _useOsmRaster = false;
 
   @override
   void initState() {
@@ -107,34 +109,51 @@ class _HomePageState extends State<HomePage> {
         children: [
           FlutterMap(
             mapController: _mapController,
-            options: const MapOptions(
-              initialCenter: LatLng(48.8566, 2.3522),
+            options: MapOptions(
+              initialCenter: const LatLng(48.8566, 2.3522),
               initialZoom: 5,
+              onMapEvent: (event) {
+                final zoom = event.camera.zoom;
+                final wantsOsm = zoom >= _osmZoomThreshold;
+                if (wantsOsm != _useOsmRaster) {
+                  setState(() => _useOsmRaster = wantsOsm);
+                }
+              },
             ),
             children: [
-              FutureBuilder<PmTilesVectorTileProvider>(
-                future: _tileProviderFuture,
-                builder: (context, snap) {
-                  if (snap.hasData) {
-                    return VectorTileLayer(
-                      tileProviders:
-                          TileProviders({'protomaps': snap.data!}),
-                      theme: isDark
-                          ? ProtomapsThemes.darkV4()
-                          : ProtomapsThemes.lightV4(),
-                      // Protomaps planet build tops out at zoom 15.
-                      // VectorTileLayer overzooms above this, so the map
-                      // keeps rendering without requesting non-existent tiles.
-                      maximumZoom: 15,
+              if (_useOsmRaster)
+                // OSM Standard shows indoor room geometry at zoom 17-18.
+                // Dark mode uses CARTO Dark Matter (no OSM dark variant).
+                TileLayer(
+                  urlTemplate: isDark ? cartoUrl : kOsmTilesUrl,
+                  subdomains: isDark ? const ['a', 'b', 'c', 'd'] : const [],
+                  maxNativeZoom: 19,
+                  userAgentPackageName: 'com.clue',
+                )
+              else
+                FutureBuilder<PmTilesVectorTileProvider>(
+                  future: _tileProviderFuture,
+                  builder: (context, snap) {
+                    if (snap.hasData) {
+                      return VectorTileLayer(
+                        tileProviders:
+                            TileProviders({'protomaps': snap.data!}),
+                        theme: isDark
+                            ? ProtomapsThemes.darkV4()
+                            : ProtomapsThemes.lightV4(),
+                        // Protomaps planet build tops out at zoom 15.
+                        // VectorTileLayer overzooms above this, so the map
+                        // keeps rendering without requesting non-existent tiles.
+                        maximumZoom: 15,
+                      );
+                    }
+                    return TileLayer(
+                      urlTemplate: cartoUrl,
+                      subdomains: const ['a', 'b', 'c', 'd'],
+                      userAgentPackageName: 'com.clue',
                     );
-                  }
-                  return TileLayer(
-                    urlTemplate: cartoUrl,
-                    subdomains: const ['a', 'b', 'c', 'd'],
-                    userAgentPackageName: 'com.clue',
-                  );
-                },
-              ),
+                  },
+                ),
               MarkerLayer(
                 markers: [
                   ...pinned.map(
@@ -182,7 +201,7 @@ class _HomePageState extends State<HomePage> {
                 0,
               ),
               child: GestureDetector(
-                onTap: () => context.push('/search'),
+                onTap: () => context.go('/search'),
                 child: Material(
                   elevation: 4,
                   shadowColor: Colors.black26,
@@ -371,19 +390,6 @@ class _PinSheet extends StatelessWidget {
                   onPressed: onDetails,
                   icon: const Icon(Icons.info_outline, size: 18),
                   label: const Text('Details'),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm + 4),
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: () async {
-                    final uri = Uri.parse(
-                        'https://maps.google.com/?q=${memory.lat},${memory.lng}');
-                    await launchUrl(uri,
-                        mode: LaunchMode.externalApplication);
-                  },
-                  icon: const Icon(Icons.directions, size: 18),
-                  label: const Text('Navigate'),
                 ),
               ),
             ],

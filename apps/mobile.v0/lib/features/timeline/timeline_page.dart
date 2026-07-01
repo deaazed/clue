@@ -48,7 +48,7 @@ class _TimelinePageState extends State<TimelinePage> {
           IconButton(
             icon: const Icon(Icons.search_outlined),
             tooltip: 'Search',
-            onPressed: () => context.push('/search'),
+            onPressed: () => context.go('/search'),
           ),
         ],
       ),

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import '../../models/memory.dart';
 import '../../services/memory_repository.dart';
 import '../../theme/spacing.dart';
@@ -28,8 +29,29 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
   bool _saving = false;
   String? _error;
 
+  // Path recording — accumulate GPS breadcrumbs while the sheet is open
+  final List<LatLng> _pathPoints = [];
+  StreamSubscription<Position>? _positionSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _positionSub = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.bestForNavigation,
+        distanceFilter: 2,
+      ),
+    ).listen(
+      (pos) {
+        if (mounted) _pathPoints.add(LatLng(pos.latitude, pos.longitude));
+      },
+      onError: (_) {},
+    );
+  }
+
   @override
   void dispose() {
+    _positionSub?.cancel();
     _labelCtrl.dispose();
     _noteCtrl.dispose();
     super.dispose();
@@ -100,6 +122,7 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
       lng: pos?.longitude,
       bleDevices: ble,
       timestamp: DateTime.now(),
+      path: _pathPoints.length >= 2 ? List.unmodifiable(_pathPoints) : null,
     );
 
     await MemoryRepository.save(memory);
