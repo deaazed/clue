@@ -1,3 +1,4 @@
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -159,51 +160,102 @@ class _Shell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final path = GoRouterState.of(context).uri.path;
+    // Tab order: Map(0) · Search(1) · Clues(2) · Places(3)
     final index = switch (path) {
-      String p when p.startsWith('/timeline') => 1,
-      String p when p.startsWith('/search') => 2,
+      String p when p.startsWith('/search') => 1,
+      String p when p.startsWith('/timeline') => 2,
       String p when p.startsWith('/places') => 3,
       _ => 0,
     };
 
     return Scaffold(
       body: child,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: index,
-        onDestinationSelected: (i) {
+      bottomNavigationBar: _BottomNav(
+        index: index,
+        onTap: (i) {
           switch (i) {
-            case 0:
-              context.go('/home');
-            case 1:
-              context.go('/timeline');
-            case 2:
-              context.go('/search');
-            case 3:
-              context.go('/places');
+            case 0: context.go('/home');
+            case 1: context.go('/search');
+            case 2: context.go('/timeline');
+            case 3: context.go('/places');
           }
         },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: 'Map',
+      ),
+    );
+  }
+}
+
+class _BottomNav extends StatelessWidget {
+  const _BottomNav({required this.index, required this.onTap});
+  final int index;
+  final void Function(int) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark
+        ? const Color(0xFF1E1A16).withValues(alpha: 0.95)
+        : const Color(0xFFFBF7F0).withValues(alpha: 0.95);
+    final border = isDark ? const Color(0xFF3A342C) : const Color(0xFFE7DECF);
+
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          decoration: BoxDecoration(
+            color: bg,
+            border: Border(top: BorderSide(color: border)),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.bookmark_outline),
-            selectedIcon: Icon(Icons.bookmark),
-            label: 'Clues',
+          child: SafeArea(
+            top: false,
+            child: SizedBox(
+              height: 56,
+              child: Row(
+                children: [
+                  _NavItem(icon: Icons.map, label: 'Map', selected: index == 0, onTap: () => onTap(0)),
+                  _NavItem(icon: Icons.search, label: 'Search', selected: index == 1, onTap: () => onTap(1)),
+                  _NavItem(icon: Icons.bookmark, label: 'Clues', selected: index == 2, onTap: () => onTap(2)),
+                  _NavItem(icon: Icons.business, label: 'Places', selected: index == 3, onTap: () => onTap(3)),
+                ],
+              ),
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.search_outlined),
-            selectedIcon: Icon(Icons.search),
-            label: 'Search',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.business_outlined),
-            selectedIcon: Icon(Icons.business),
-            label: 'Places',
-          ),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  const _NavItem({required this.icon, required this.label, required this.selected, required this.onTap});
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? ClueColors.amber : const Color(0xFFADA394);
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 23),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: color,
+                fontFamily: GoogleFonts.hankenGrotesk().fontFamily,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

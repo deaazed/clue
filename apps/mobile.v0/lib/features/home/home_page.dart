@@ -259,6 +259,7 @@ class _HomePageState extends State<HomePage> {
             heroTag: 'locate',
             backgroundColor: Colors.white,
             foregroundColor: cs.primary,
+            elevation: 2,
             onPressed: _userPosition != null
                 ? () => _mapController.move(_userPosition!, 16)
                 : _locateUser,
@@ -269,11 +270,21 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const SizedBox(height: AppSpacing.sm + 2),
-          FloatingActionButton.extended(
-            heroTag: 'save',
-            onPressed: _showSave,
-            icon: const Icon(Icons.add),
-            label: const Text('Save Memory'),
+          // Dark ink rounded-square FAB matching the prototype
+          SizedBox(
+            width: 58,
+            height: 58,
+            child: FloatingActionButton(
+              heroTag: 'save',
+              onPressed: _showSave,
+              backgroundColor: const Color(0xFF1A1714),
+              foregroundColor: Colors.white,
+              elevation: 6,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(19),
+              ),
+              child: const Icon(Icons.add, size: 28),
+            ),
           ),
         ],
       ),

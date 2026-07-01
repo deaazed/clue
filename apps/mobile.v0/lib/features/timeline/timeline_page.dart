@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../models/memory.dart';
 import '../../services/memory_repository.dart';
-import '../../theme/spacing.dart';
+import '../../theme/colors.dart';
 import '../../widgets/memory_card.dart';
 
 class TimelinePage extends StatefulWidget {
@@ -39,54 +40,61 @@ class _TimelinePageState extends State<TimelinePage> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final mutedColor = isDark ? const Color(0xFF8A7F74) : const Color(0xFF8A8172);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Memories'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search_outlined),
-            tooltip: 'Search',
-            onPressed: () => context.go('/search'),
-          ),
-        ],
-      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _memories.isEmpty
-              ? _EmptyState(cs: cs)
-              : RefreshIndicator(
-                  onRefresh: _load,
-                  child: _GroupedList(
-                    memories: _memories,
-                    cs: cs,
-                    onDelete: _delete,
+          : CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Your clues',
+                            style: TextStyle(
+                              fontFamily: GoogleFonts.bricolageGrotesque().fontFamily,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 26,
+                              letterSpacing: -0.02 * 26,
+                              color: isDark ? ClueColors.paper : ClueColors.ink,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            _memories.isEmpty
+                                ? 'No clues yet — drop your first one'
+                                : '${_memories.length} ${_memories.length == 1 ? 'place' : 'places'} you\'ve helped remember',
+                            style: TextStyle(fontSize: 13.5, color: mutedColor),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-    );
-  }
-}
-
-class _GroupedList extends StatelessWidget {
-  const _GroupedList({
-    required this.memories,
-    required this.cs,
-    required this.onDelete,
-  });
-
-  final List<Memory> memories;
-  final ColorScheme cs;
-  final void Function(String id) onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    final items = _buildItems(context);
-    return ListView.builder(
-      padding: const EdgeInsets.only(
-          top: AppSpacing.sm, bottom: AppSpacing.xl),
-      itemCount: items.length,
-      itemBuilder: (_, i) => items[i],
+                if (_memories.isEmpty)
+                  SliverFillRemaining(
+                    child: _EmptyState(isDark: isDark),
+                  )
+                else
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, i) {
+                        final items = _buildItems(context);
+                        return items[i];
+                      },
+                      childCount: _buildItems(context).length,
+                    ),
+                  ),
+                const SliverPadding(padding: EdgeInsets.only(bottom: 24)),
+              ],
+            ),
     );
   }
 
@@ -94,7 +102,7 @@ class _GroupedList extends StatelessWidget {
     final result = <Widget>[];
     String? lastGroup;
 
-    for (final m in memories) {
+    for (final m in _memories) {
       final group = _groupLabel(m.timestamp);
       if (group != lastGroup) {
         result.add(_DateHeader(label: group));
@@ -105,19 +113,18 @@ class _GroupedList extends StatelessWidget {
         direction: DismissDirection.endToStart,
         background: Container(
           alignment: Alignment.centerRight,
-          padding: const EdgeInsets.only(right: AppSpacing.lg),
-          margin: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+          padding: const EdgeInsets.only(right: 24),
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 5.5),
           decoration: BoxDecoration(
-            color: cs.errorContainer,
-            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+            color: const Color(0xFFFFEEEE),
+            borderRadius: BorderRadius.circular(17),
           ),
-          child: Icon(Icons.delete_outline, color: cs.error),
+          child: const Icon(Icons.delete_outline, color: Color(0xFFE53935)),
         ),
         confirmDismiss: (_) => showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Delete memory?'),
+            title: const Text('Delete clue?'),
             content: Text('"${m.label}" will be removed.'),
             actions: [
               TextButton(
@@ -131,7 +138,7 @@ class _GroupedList extends StatelessWidget {
             ],
           ),
         ),
-        onDismissed: (_) => onDelete(m.id),
+        onDismissed: (_) => _delete(m.id),
         child: MemoryCard(
           memory: m,
           onTap: () => context.push('/memory', extra: m),
@@ -149,16 +156,10 @@ class _GroupedList extends StatelessWidget {
     if (diff == 0) return 'Today';
     if (diff == 1) return 'Yesterday';
     if (diff < 7) {
-      const days = [
-        'Monday', 'Tuesday', 'Wednesday', 'Thursday',
-        'Friday', 'Saturday', 'Sunday'
-      ];
+      const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
       return days[d.weekday - 1];
     }
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     if (d.year == now.year) return '${months[d.month - 1]} ${d.day}';
     return '${months[d.month - 1]} ${d.day}, ${d.year}';
   }
@@ -170,20 +171,16 @@ class _DateHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md + 4,
-        AppSpacing.lg,
-        AppSpacing.md,
-        AppSpacing.xs,
-      ),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 6),
       child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: cs.onSurfaceVariant,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.4,
+        label.toUpperCase(),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.1 * 11,
+          color: isDark ? const Color(0xFF8A7F74) : const Color(0xFF9C9384),
         ),
       ),
     );
@@ -191,35 +188,34 @@ class _DateHeader extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.cs});
-  final ColorScheme cs;
+  const _EmptyState({required this.isDark});
+  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
+    final mutedColor = isDark ? const Color(0xFF8A7F74) : const Color(0xFF9C9384);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.location_on_outlined,
-                size: 64, color: cs.outlineVariant),
-            const SizedBox(height: AppSpacing.md),
+            Icon(Icons.location_on_outlined, size: 52, color: mutedColor.withValues(alpha: 0.5)),
+            const SizedBox(height: 16),
             Text(
-              'No memories yet',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: cs.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
+              'No clues yet',
+              style: TextStyle(
+                fontFamily: GoogleFonts.bricolageGrotesque().fontFamily,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: isDark ? ClueColors.paper : ClueColors.ink,
+              ),
             ),
-            const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: 8),
             Text(
-              'Tap Save Memory on the map\nto save your first location.',
+              'Tap + on the map to drop\nyour first clue.',
               textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: cs.outline),
+              style: TextStyle(fontSize: 14, color: mutedColor, height: 1.5),
             ),
           ],
         ),
