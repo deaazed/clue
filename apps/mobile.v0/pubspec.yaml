@@ -42,15 +42,11 @@ dependencies:
   flutter_map: ^7.0.2
   latlong2: ^0.9.0
 
-  # Open native maps app
-  url_launcher: ^6.3.0
-
   # Share memories via native share sheet
   share_plus: ^10.1.0
   vector_map_tiles: ^8.0.0
   vector_map_tiles_pmtiles: ^1.5.0
   google_fonts: ^8.1.0
-  phosphor_flutter: ^2.1.0
 
 dev_dependencies:
   flutter_test:

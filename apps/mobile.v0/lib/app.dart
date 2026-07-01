@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'features/home/home_page.dart';
 import 'features/timeline/timeline_page.dart';
 import 'features/search/search_page.dart';
@@ -183,25 +182,25 @@ class _Shell extends StatelessWidget {
               context.go('/places');
           }
         },
-        destinations: [
+        destinations: const [
           NavigationDestination(
-            icon: PhosphorIcon(PhosphorIconsRegular.mapTrifold),
-            selectedIcon: PhosphorIcon(PhosphorIconsFill.mapTrifold),
+            icon: Icon(Icons.map_outlined),
+            selectedIcon: Icon(Icons.map),
             label: 'Map',
           ),
           NavigationDestination(
-            icon: PhosphorIcon(PhosphorIconsRegular.bookmarkSimple),
-            selectedIcon: PhosphorIcon(PhosphorIconsFill.bookmarkSimple),
+            icon: Icon(Icons.bookmark_outline),
+            selectedIcon: Icon(Icons.bookmark),
             label: 'Clues',
           ),
           NavigationDestination(
-            icon: PhosphorIcon(PhosphorIconsRegular.magnifyingGlass),
-            selectedIcon: PhosphorIcon(PhosphorIconsFill.magnifyingGlass),
+            icon: Icon(Icons.search_outlined),
+            selectedIcon: Icon(Icons.search),
             label: 'Search',
           ),
           NavigationDestination(
-            icon: PhosphorIcon(PhosphorIconsRegular.buildings),
-            selectedIcon: PhosphorIcon(PhosphorIconsFill.buildings),
+            icon: Icon(Icons.business_outlined),
+            selectedIcon: Icon(Icons.business),
             label: 'Places',
           ),
         ],
@@ -223,8 +222,7 @@ class _PlacesPlaceholder extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            PhosphorIcon(PhosphorIconsRegular.buildings,
-                size: 52, color: cs.outlineVariant),
+            Icon(Icons.business_outlined, size: 52, color: cs.outlineVariant),
             const SizedBox(height: AppSpacing.md),
             Text('Coming soon',
                 style: TextStyle(color: cs.onSurfaceVariant)),
