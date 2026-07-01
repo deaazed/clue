@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'features/home/home_page.dart';
 import 'features/timeline/timeline_page.dart';
 import 'features/search/search_page.dart';
@@ -9,6 +11,7 @@ import 'features/session_detail/session_detail_page.dart';
 import 'features/memory_detail/memory_detail_page.dart';
 import 'models/memory.dart';
 import 'models/session.dart';
+import 'theme/colors.dart';
 import 'theme/spacing.dart';
 
 final _router = GoRouter(
@@ -17,67 +20,119 @@ final _router = GoRouter(
     ShellRoute(
       builder: (context, state, child) => _Shell(child: child),
       routes: [
-        GoRoute(
-          path: '/home',
-          builder: (context, state) => const HomePage(),
-        ),
-        GoRoute(
-          path: '/timeline',
-          builder: (context, state) => const TimelinePage(),
-        ),
-        GoRoute(
-          path: '/dev/logger',
-          builder: (context, state) => const LoggerPage(),
-        ),
-        GoRoute(
-          path: '/dev/sessions',
-          builder: (context, state) => const SessionsPage(),
-        ),
+        GoRoute(path: '/home', builder: (c, s) => const HomePage()),
+        GoRoute(path: '/timeline', builder: (c, s) => const TimelinePage()),
+        GoRoute(path: '/search', builder: (c, s) => const SearchPage()),
+        GoRoute(path: '/places', builder: (c, s) => const _PlacesPlaceholder()),
+        GoRoute(path: '/dev/logger', builder: (c, s) => const LoggerPage()),
+        GoRoute(path: '/dev/sessions', builder: (c, s) => const SessionsPage()),
       ],
-    ),
-    // Outside shell — no bottom nav
-    GoRoute(
-      path: '/search',
-      builder: (context, state) => const SearchPage(),
     ),
     GoRoute(
       path: '/memory',
-      builder: (context, state) =>
-          MemoryDetailPage(memory: state.extra as Memory),
+      builder: (_, state) => MemoryDetailPage(memory: state.extra as Memory),
     ),
     GoRoute(
       path: '/sessions/:id',
-      builder: (context, state) =>
-          SessionDetailPage(session: state.extra as Session),
+      builder: (_, state) => SessionDetailPage(session: state.extra as Session),
     ),
   ],
 );
 
 ThemeData _buildTheme(Brightness brightness) {
+  final isDark = brightness == Brightness.dark;
   final cs = ColorScheme.fromSeed(
-    seedColor: const Color(0xFF7C3AED),
+    seedColor: ClueColors.amber,
     brightness: brightness,
+  ).copyWith(
+    primary: ClueColors.amber,
+    secondary: ClueColors.clay,
+    surface: isDark ? ClueColors.inkSurface : ClueColors.paper,
+    surfaceContainerLowest: isDark ? ClueColors.inkCard : ClueColors.paperDeep,
+    surfaceContainerLow: isDark ? ClueColors.inkCard : ClueColors.paperDeep,
+    surfaceContainer: isDark ? ClueColors.inkCard : ClueColors.paperDeep,
+    onSurface: isDark ? ClueColors.paper : ClueColors.ink,
+    outlineVariant: isDark ? const Color(0xFF3A342C) : ClueColors.border,
   );
+
+  final baseTextTheme = GoogleFonts.hankenGroteskTextTheme(
+    ThemeData(brightness: brightness).textTheme,
+  );
+
+  // Display and headline styles use Bricolage Grotesque
+  final displayStyle = GoogleFonts.bricolageGrotesque();
+  final textTheme = baseTextTheme.copyWith(
+    displayLarge: baseTextTheme.displayLarge?.merge(displayStyle),
+    displayMedium: baseTextTheme.displayMedium?.merge(displayStyle),
+    displaySmall: baseTextTheme.displaySmall?.merge(displayStyle),
+    headlineLarge: baseTextTheme.headlineLarge?.merge(displayStyle),
+    headlineMedium: baseTextTheme.headlineMedium?.merge(displayStyle),
+    headlineSmall: baseTextTheme.headlineSmall?.merge(displayStyle),
+    titleLarge: baseTextTheme.titleLarge?.merge(displayStyle),
+  );
+
   return ThemeData(
     colorScheme: cs,
     useMaterial3: true,
+    scaffoldBackgroundColor: isDark ? ClueColors.inkSurface : ClueColors.paper,
+    textTheme: textTheme,
     bottomSheetTheme: BottomSheetThemeData(
-      backgroundColor: cs.surface,
+      backgroundColor: isDark ? ClueColors.inkCard : ClueColors.paperDeep,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppSpacing.sheetRadius),
         ),
       ),
       showDragHandle: true,
-      dragHandleColor: cs.outlineVariant,
-      dragHandleSize: const Size(32, 4),
+      dragHandleColor: isDark ? const Color(0xFF4A4238) : ClueColors.borderStrong,
+      dragHandleSize: const Size(42, 5),
     ),
-    navigationBarTheme: const NavigationBarThemeData(height: 64),
+    navigationBarTheme: NavigationBarThemeData(
+      height: 72,
+      backgroundColor: isDark
+          ? ClueColors.inkCard.withValues(alpha: 0.92)
+          : ClueColors.paperDeep.withValues(alpha: 0.92),
+      indicatorColor: ClueColors.amber.withValues(alpha: 0.15),
+      iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(
+            color: states.contains(WidgetState.selected)
+                ? ClueColors.amber
+                : ClueColors.muted,
+          )),
+      labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
+            fontFamily: GoogleFonts.hankenGrotesk().fontFamily,
+            fontSize: 10.5,
+            fontWeight: FontWeight.w700,
+            color: states.contains(WidgetState.selected)
+                ? ClueColors.amber
+                : ClueColors.muted,
+          )),
+    ),
     cardTheme: CardThemeData(
       elevation: 0,
+      color: isDark ? ClueColors.inkCard : ClueColors.paperDeep,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        side: BorderSide(
+          color: isDark ? const Color(0xFF3A342C) : ClueColors.border,
+        ),
       ),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: ClueColors.amber,
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 15),
+        textStyle: GoogleFonts.hankenGrotesk(
+          fontWeight: FontWeight.w700,
+          fontSize: 16,
+        ),
+      ),
+    ),
+    dividerTheme: DividerThemeData(
+      color: isDark ? const Color(0xFF3A342C) : ClueColors.border,
     ),
   );
 }
@@ -104,29 +159,77 @@ class _Shell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final location = GoRouterState.of(context).uri.path;
-    final index = location.startsWith('/timeline') ? 1 : 0;
+    final path = GoRouterState.of(context).uri.path;
+    final index = switch (path) {
+      String p when p.startsWith('/timeline') => 1,
+      String p when p.startsWith('/search') => 2,
+      String p when p.startsWith('/places') => 3,
+      _ => 0,
+    };
 
     return Scaffold(
       body: child,
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
         onDestinationSelected: (i) {
-          if (i == 0) context.go('/home');
-          if (i == 1) context.go('/timeline');
+          switch (i) {
+            case 0:
+              context.go('/home');
+            case 1:
+              context.go('/timeline');
+            case 2:
+              context.go('/search');
+            case 3:
+              context.go('/places');
+          }
         },
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.explore_outlined),
-            selectedIcon: Icon(Icons.explore),
+            icon: PhosphorIcon(PhosphorIconsRegular.mapTrifold),
+            selectedIcon: PhosphorIcon(PhosphorIconsFill.mapTrifold),
             label: 'Map',
           ),
           NavigationDestination(
-            icon: Icon(Icons.format_list_bulleted_outlined),
-            selectedIcon: Icon(Icons.format_list_bulleted),
-            label: 'Memories',
+            icon: PhosphorIcon(PhosphorIconsRegular.bookmarkSimple),
+            selectedIcon: PhosphorIcon(PhosphorIconsFill.bookmarkSimple),
+            label: 'Clues',
+          ),
+          NavigationDestination(
+            icon: PhosphorIcon(PhosphorIconsRegular.magnifyingGlass),
+            selectedIcon: PhosphorIcon(PhosphorIconsFill.magnifyingGlass),
+            label: 'Search',
+          ),
+          NavigationDestination(
+            icon: PhosphorIcon(PhosphorIconsRegular.buildings),
+            selectedIcon: PhosphorIcon(PhosphorIconsFill.buildings),
+            label: 'Places',
           ),
         ],
+      ),
+    );
+  }
+}
+
+// Placeholder for the Places tab — full venue list comes in #24
+class _PlacesPlaceholder extends StatelessWidget {
+  const _PlacesPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Places')),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PhosphorIcon(PhosphorIconsRegular.buildings,
+                size: 52, color: cs.outlineVariant),
+            const SizedBox(height: AppSpacing.md),
+            Text('Coming soon',
+                style: TextStyle(color: cs.onSurfaceVariant)),
+          ],
+        ),
       ),
     );
   }
