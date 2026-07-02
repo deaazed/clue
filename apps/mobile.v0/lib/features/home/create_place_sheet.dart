@@ -2,12 +2,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:latlong2/latlong.dart';
 import '../../models/place.dart';
 import '../../services/place_repository.dart';
 import '../../theme/colors.dart';
+import 'map_picker_page.dart';
 
 class CreatePlaceSheet extends StatefulWidget {
-  const CreatePlaceSheet({super.key});
+  const CreatePlaceSheet({super.key, this.initialPosition});
+  /// Best position the home map already has — used immediately so there's no
+  /// wait when the user is standing at the place.
+  final LatLng? initialPosition;
 
   @override
   State<CreatePlaceSheet> createState() => _CreatePlaceSheetState();
@@ -17,13 +22,74 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
   final _nameCtrl = TextEditingController();
   bool _saving = false;
   String? _error;
-  // Live accuracy feedback during GPS acquisition
-  double? _liveAccuracy;
+
+  LatLng? _gpsPosition;  // from background GPS refinement
+  LatLng? _picked;       // from map picker (user's explicit choice)
+  bool _loadingGps = false;
+
+  LatLng? get _effectivePosition => _picked ?? _gpsPosition;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialPosition != null) {
+      _gpsPosition = widget.initialPosition;
+    } else {
+      _loadingGps = true;
+      _fetchGps();
+    }
+  }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchGps() async {
+    // Last known — instant
+    try {
+      final last = await Geolocator.getLastKnownPosition();
+      if (last != null && mounted && _picked == null) {
+        setState(() {
+          _gpsPosition = LatLng(last.latitude, last.longitude);
+          _loadingGps = false;
+        });
+        return; // good enough — don't block on getCurrentPosition
+      }
+    } catch (_) {}
+
+    // Medium accuracy with a short timeout — only if last known wasn't available
+    try {
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        ),
+      ).timeout(const Duration(seconds: 5));
+      if (mounted && _picked == null) {
+        setState(() {
+          _gpsPosition = LatLng(pos.latitude, pos.longitude);
+        });
+      }
+    } catch (_) {}
+
+    if (mounted) setState(() => _loadingGps = false);
+  }
+
+  Future<void> _pickOnMap() async {
+    final ll = await Navigator.push<LatLng>(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            MapPickerPage(initialPosition: _effectivePosition),
+      ),
+    );
+    if (ll != null && mounted) {
+      setState(() {
+        _picked = ll;
+        _error = null;
+      });
+    }
   }
 
   Future<void> _save() async {
@@ -32,51 +98,21 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
       setState(() => _error = 'Give this place a name');
       return;
     }
-    setState(() { _saving = true; _error = null; _liveAccuracy = null; });
-
-    Position? best;
-
-    // Use last known as an instant fallback while the stream warms up
-    try {
-      final last = await Geolocator.getLastKnownPosition();
-      if (last != null) best = last;
-    } catch (_) {}
-
-    // Stream positions for up to 15 s; pick the one with smallest accuracy radius
-    try {
-      final stream = Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.best,
-          distanceFilter: 0,
-        ),
-      ).timeout(const Duration(seconds: 15));
-
-      await for (final pos in stream) {
-        if (best == null || pos.accuracy < best.accuracy) {
-          best = pos;
-          if (mounted) setState(() => _liveAccuracy = pos.accuracy);
-        }
-        // Good enough — stop waiting
-        if (pos.accuracy <= 15.0) break;
-      }
-    } catch (_) {}
-
-    if (best == null) {
-      if (mounted) {
-        setState(() {
-          _saving = false;
-          _liveAccuracy = null;
-          _error = 'Could not get your location. Check permissions.';
-        });
-      }
+    final location = _effectivePosition;
+    if (location == null) {
+      setState(() => _error = 'No location — tap "Pick on map" below');
       return;
     }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
 
     final place = Place(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: name,
-      lat: best.latitude,
-      lng: best.longitude,
+      lat: location.latitude,
+      lng: location.longitude,
       timestamp: DateTime.now(),
     );
 
@@ -87,12 +123,15 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
     final cardBg = isDark ? const Color(0xFF2E2820) : Colors.white;
     final borderColor =
         isDark ? const Color(0xFF3A342C) : const Color(0xFFE9E0D1);
     final mutedColor =
         isDark ? const Color(0xFF8A7F74) : const Color(0xFF8A8172);
     final inkColor = isDark ? ClueColors.paper : ClueColors.ink;
+
+    final hasLocation = _effectivePosition != null;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -117,7 +156,7 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
           ),
           const SizedBox(height: 2),
           Text(
-            'Name the venue you\'re in right now',
+            'Name the venue you\'re saving',
             style: TextStyle(fontSize: 12.5, color: mutedColor),
           ),
           const SizedBox(height: 20),
@@ -127,9 +166,10 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
             decoration: BoxDecoration(
               color: cardBg,
               border: Border.all(
-                  color: _error != null
-                      ? const Color(0xFFE53935)
-                      : borderColor),
+                color: _error != null && _error!.contains('name')
+                    ? const Color(0xFFE53935)
+                    : borderColor,
+              ),
               borderRadius: BorderRadius.circular(15),
             ),
             padding: const EdgeInsets.fromLTRB(15, 11, 15, 13),
@@ -170,54 +210,70 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
               ],
             ),
           ),
-          if (_error != null) ...[
-            const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.only(left: 4),
-              child: Text(_error!,
-                  style: const TextStyle(
-                      fontSize: 12, color: Color(0xFFE53935))),
-            ),
-          ],
-          const SizedBox(height: 20),
 
-          // GPS info row — live accuracy chip while saving
+          const SizedBox(height: 16),
+
+          // Location row
           Row(
             children: [
-              Icon(Icons.location_on, size: 14, color: ClueColors.amber),
+              Icon(
+                Icons.location_on,
+                size: 14,
+                color: hasLocation ? ClueColors.amber : mutedColor,
+              ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  _saving
-                      ? 'Finding best position…'
-                      : 'Your GPS position marks the place. Walk inside before saving.',
-                  style:
-                      TextStyle(fontSize: 12, color: mutedColor, height: 1.4),
+                  _picked != null
+                      ? 'Location set on map'
+                      : hasLocation
+                          ? 'Using your approximate location'
+                          : _loadingGps
+                              ? 'Finding your location…'
+                              : 'No location found',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: hasLocation ? mutedColor : const Color(0xFFE53935).withValues(alpha: _loadingGps ? 0 : 1),
+                      height: 1.4),
                 ),
               ),
-              if (_saving && _liveAccuracy != null) ...[
+              if (_loadingGps && !hasLocation) ...[
                 const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: _accuracyColor(_liveAccuracy!)
-                        .withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '±${_liveAccuracy!.round()} m',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: _accuracyColor(_liveAccuracy!),
-                    ),
-                  ),
+                SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 1.5, color: mutedColor),
                 ),
               ],
             ],
           ),
-          const SizedBox(height: 16),
+
+          const SizedBox(height: 4),
+
+          // Pick on map link
+          GestureDetector(
+            onTap: _saving ? null : _pickOnMap,
+            child: Text(
+              _picked != null ? 'Change location on map' : 'Pick a different location on map',
+              style: TextStyle(
+                fontSize: 12,
+                color: cs.primary,
+                decoration: TextDecoration.underline,
+                decorationColor: cs.primary,
+              ),
+            ),
+          ),
+
+          if (_error != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              _error!,
+              style: const TextStyle(fontSize: 12, color: Color(0xFFE53935)),
+            ),
+          ],
+
+          const SizedBox(height: 20),
 
           SizedBox(
             width: double.infinity,
@@ -237,10 +293,4 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
       ),
     );
   }
-}
-
-Color _accuracyColor(double accuracy) {
-  if (accuracy < 20) return const Color(0xFF34A853);
-  if (accuracy < 60) return ClueColors.amber;
-  return const Color(0xFFE53935);
 }

@@ -93,7 +93,7 @@ class _HomePageState extends State<HomePage> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => const CreatePlaceSheet(),
+      builder: (_) => CreatePlaceSheet(initialPosition: _userPosition),
     );
     if (place != null && mounted) {
       context.push('/place', extra: place).then((_) => _load());
