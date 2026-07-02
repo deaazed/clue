@@ -141,6 +141,16 @@ class _HomePageState extends State<HomePage> {
                   setState(() => _useOsmRaster = wantsOsm);
                 }
               },
+              onTap: (_, latLng) {
+                for (final p in _places) {
+                  if (p.boundary != null &&
+                      p.boundary!.length >= 3 &&
+                      _pointInPolygon(latLng, p.boundary!)) {
+                    _onPlaceTap(p);
+                    return;
+                  }
+                }
+              },
             ),
             children: [
               if (_useOsmRaster)
@@ -477,4 +487,21 @@ class _PlaceSheet extends StatelessWidget {
       ),
     );
   }
+}
+
+// Ray-casting point-in-polygon for geographic coordinates.
+bool _pointInPolygon(LatLng point, List<LatLng> polygon) {
+  bool inside = false;
+  final x = point.longitude;
+  final y = point.latitude;
+  final n = polygon.length;
+  for (int i = 0, j = n - 1; i < n; j = i++) {
+    final xi = polygon[i].longitude, yi = polygon[i].latitude;
+    final xj = polygon[j].longitude, yj = polygon[j].latitude;
+    if ((yi > y) != (yj > y) &&
+        x < (xj - xi) * (y - yi) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
 }
