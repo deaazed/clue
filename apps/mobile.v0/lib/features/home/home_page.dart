@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 import 'package:vector_map_tiles/vector_map_tiles.dart';
 import 'package:vector_map_tiles_pmtiles/vector_map_tiles_pmtiles.dart';
 import '../../config.dart';
@@ -25,11 +28,14 @@ class _HomePageState extends State<HomePage> {
   List<Place> _places = [];
   LatLng? _userPosition;
   double? _posAccuracy;
+  double? _heading;
+  double _magX = 0, _magY = 0; // low-pass filtered magnetometer
   final _mapController = MapController();
   late final Future<PmTilesVectorTileProvider> _tileProviderFuture;
   static const _osmZoomThreshold = 14.0;
   bool _useOsmRaster = false;
   StreamSubscription<Position>? _positionSub;
+  StreamSubscription<MagnetometerEvent>? _magnetometerSub;
 
   @override
   void initState() {
@@ -37,11 +43,13 @@ class _HomePageState extends State<HomePage> {
     _tileProviderFuture = PmTilesVectorTileProvider.fromSource(kTilesUrl);
     _load();
     _startLocationStream();
+    _startHeadingStream();
   }
 
   @override
   void dispose() {
     _positionSub?.cancel();
+    _magnetometerSub?.cancel();
     _mapController.dispose();
     super.dispose();
   }
@@ -70,6 +78,26 @@ class _HomePageState extends State<HomePage> {
         if (!mounted) return;
         final first = _userPosition == null;
         _applyPosition(pos, animate: first);
+      },
+      onError: (_) {},
+    );
+  }
+
+  void _startHeadingStream() {
+    // Low-pass filter (α = 0.15): smooths jitter while tracking real rotations.
+    // Formula for portrait-held phone: atan2(-x, y) → clockwise degrees from North.
+    _magnetometerSub = magnetometerEventStream(
+      samplingPeriod: SensorInterval.normalInterval,
+    ).listen(
+      (event) {
+        const alpha = 0.15;
+        _magX = alpha * _magX + (1 - alpha) * event.x;
+        _magY = alpha * _magY + (1 - alpha) * event.y;
+        final h = (math.atan2(-_magX, _magY) * 180 / math.pi + 360) % 360;
+        // Only rebuild when heading shifts more than 2° to avoid excessive redraws.
+        if (_heading == null || (h - _heading!).abs() > 2) {
+          if (mounted) setState(() => _heading = h);
+        }
       },
       onError: (_) {},
     );
@@ -228,20 +256,11 @@ class _HomePageState extends State<HomePage> {
                   if (_userPosition != null)
                     Marker(
                       point: _userPosition!,
-                      width: 20,
-                      height: 20,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: ClueColors.userDot,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
-                          boxShadow: [
-                            BoxShadow(
-                              blurRadius: 8,
-                              color: ClueColors.userDot.withValues(alpha: 0.4),
-                            ),
-                          ],
-                        ),
+                      width: 72,
+                      height: 72,
+                      child: _UserLocationMarker(
+                        color: ClueColors.userDot,
+                        heading: _heading,
                       ),
                     ),
                 ],
@@ -349,6 +368,76 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+}
+
+/// User location dot with an optional direction cone pointing in [heading] degrees
+/// (0 = North, clockwise). The cone is drawn via [_HeadingCone] and rotated by
+/// Transform.rotate so the tip always points in the compass heading direction.
+class _UserLocationMarker extends StatelessWidget {
+  const _UserLocationMarker({required this.color, this.heading});
+  final Color color;
+  final double? heading;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 72,
+      height: 72,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          if (heading != null)
+            Transform.rotate(
+              angle: heading! * math.pi / 180,
+              child: CustomPaint(
+                size: const Size(72, 72),
+                painter: _HeadingCone(color: color),
+              ),
+            ),
+          Container(
+            width: 16,
+            height: 16,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 3),
+              boxShadow: [
+                BoxShadow(blurRadius: 8, color: color.withValues(alpha: 0.4)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Draws a semi-transparent triangular cone pointing upward (North = 0°).
+/// Rotate the parent widget to face any compass direction.
+class _HeadingCone extends CustomPainter {
+  const _HeadingCone({required this.color});
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    // Tip 28 px above centre; base 10 px wide at centre level.
+    final path = ui.Path()
+      ..moveTo(cx, cy - 28)      // tip
+      ..lineTo(cx - 10, cy + 2)  // base left
+      ..lineTo(cx + 10, cy + 2)  // base right
+      ..close();
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = color.withValues(alpha: 0.55)
+        ..style = PaintingStyle.fill,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_HeadingCone old) => old.color != color;
 }
 
 /// Colour-codes accuracy: green < 20 m, amber < 60 m, red otherwise.

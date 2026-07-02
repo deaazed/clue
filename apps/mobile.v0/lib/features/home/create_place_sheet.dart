@@ -10,8 +10,6 @@ import 'map_picker_page.dart';
 
 class CreatePlaceSheet extends StatefulWidget {
   const CreatePlaceSheet({super.key, this.initialPosition});
-  /// Best position the home map already has — used immediately so there's no
-  /// wait when the user is standing at the place.
   final LatLng? initialPosition;
 
   @override
@@ -23,8 +21,8 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
   bool _saving = false;
   String? _error;
 
-  LatLng? _gpsPosition;  // from background GPS refinement
-  LatLng? _picked;       // from map picker (user's explicit choice)
+  LatLng? _gpsPosition;
+  LatLng? _picked;
   bool _loadingGps = false;
 
   LatLng? get _effectivePosition => _picked ?? _gpsPosition;
@@ -47,7 +45,6 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
   }
 
   Future<void> _fetchGps() async {
-    // Last known — instant
     try {
       final last = await Geolocator.getLastKnownPosition();
       if (last != null && mounted && _picked == null) {
@@ -55,11 +52,10 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
           _gpsPosition = LatLng(last.latitude, last.longitude);
           _loadingGps = false;
         });
-        return; // good enough — don't block on getCurrentPosition
+        return;
       }
     } catch (_) {}
 
-    // Medium accuracy with a short timeout — only if last known wasn't available
     try {
       final pos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
@@ -67,9 +63,7 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
         ),
       ).timeout(const Duration(seconds: 5));
       if (mounted && _picked == null) {
-        setState(() {
-          _gpsPosition = LatLng(pos.latitude, pos.longitude);
-        });
+        setState(() => _gpsPosition = LatLng(pos.latitude, pos.longitude));
       }
     } catch (_) {}
 
@@ -80,8 +74,7 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
     final ll = await Navigator.push<LatLng>(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            MapPickerPage(initialPosition: _effectivePosition),
+        builder: (_) => MapPickerPage(initialPosition: _effectivePosition),
       ),
     );
     if (ll != null && mounted) {
@@ -98,16 +91,16 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
       setState(() => _error = 'Give this place a name');
       return;
     }
-    final location = _effectivePosition;
-    if (location == null) {
-      setState(() => _error = 'No location — tap "Pick on map" below');
-      return;
-    }
-    setState(() {
-      _saving = true;
-      _error = null;
-    });
 
+    // No GPS yet — open map picker immediately instead of blocking
+    if (_effectivePosition == null) {
+      await _pickOnMap();
+      if (_effectivePosition == null) return;
+    }
+
+    setState(() { _saving = true; _error = null; });
+
+    final location = _effectivePosition!;
     final place = Place(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: name,
@@ -130,7 +123,6 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
     final mutedColor =
         isDark ? const Color(0xFF8A7F74) : const Color(0xFF8A8172);
     final inkColor = isDark ? ClueColors.paper : ClueColors.ink;
-
     final hasLocation = _effectivePosition != null;
 
     return Padding(
@@ -211,9 +203,9 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
-          // Location row
+          // Location status + pick button side by side
           Row(
             children: [
               Icon(
@@ -221,7 +213,7 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
                 size: 14,
                 color: hasLocation ? ClueColors.amber : mutedColor,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 5),
               Expanded(
                 child: Text(
                   _picked != null
@@ -231,14 +223,11 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
                           : _loadingGps
                               ? 'Finding your location…'
                               : 'No location found',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: hasLocation ? mutedColor : const Color(0xFFE53935).withValues(alpha: _loadingGps ? 0 : 1),
-                      height: 1.4),
+                  style: TextStyle(fontSize: 12, color: mutedColor),
                 ),
               ),
               if (_loadingGps && !hasLocation) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 SizedBox(
                   width: 12,
                   height: 12,
@@ -249,18 +238,26 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
             ],
           ),
 
-          const SizedBox(height: 4),
+          const SizedBox(height: 10),
 
-          // Pick on map link
-          GestureDetector(
-            onTap: _saving ? null : _pickOnMap,
-            child: Text(
-              _picked != null ? 'Change location on map' : 'Pick a different location on map',
-              style: TextStyle(
-                fontSize: 12,
-                color: cs.primary,
-                decoration: TextDecoration.underline,
-                decorationColor: cs.primary,
+          // Always-visible map picker button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _saving ? null : _pickOnMap,
+              icon: Icon(
+                _picked != null ? Icons.edit_location_alt_outlined : Icons.map_outlined,
+                size: 16,
+              ),
+              label: Text(
+                _picked != null
+                    ? 'Change location on map'
+                    : 'Pick location on map',
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: cs.primary,
+                side: BorderSide(color: cs.primary.withValues(alpha: 0.4)),
+                padding: const EdgeInsets.symmetric(vertical: 10),
               ),
             ),
           ),
@@ -273,7 +270,7 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
             ),
           ],
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
           SizedBox(
             width: double.infinity,
