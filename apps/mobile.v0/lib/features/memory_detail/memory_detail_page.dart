@@ -82,7 +82,7 @@ class _MemoryDetailPageState extends State<MemoryDetailPage> {
       lines.add('');
       lines.add('https://maps.google.com/?q=${m.lat},${m.lng}');
     }
-    Share.share(lines.join('\n'));
+    SharePlus.instance.share(ShareParams(text: lines.join('\n')));
   }
 
   @override
