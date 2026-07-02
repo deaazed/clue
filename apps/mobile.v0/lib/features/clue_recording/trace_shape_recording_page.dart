@@ -224,7 +224,18 @@ class _TraceShapeRecordingPageState extends State<TraceShapeRecordingPage> {
     setState(() => _state = _TraceState.saving);
     final pts = List<LatLng>.unmodifiable(
         _mode == _TraceMode.walk ? _gpsPath : _drawn);
-    final updated = widget.place.copyWith(boundary: pts);
+
+    // Move place pin to the centroid of the boundary
+    final centLat =
+        pts.map((p) => p.latitude).reduce((a, b) => a + b) / pts.length;
+    final centLng =
+        pts.map((p) => p.longitude).reduce((a, b) => a + b) / pts.length;
+
+    final updated = widget.place.copyWith(
+      boundary: pts,
+      lat: centLat,
+      lng: centLng,
+    );
     await PlaceRepository.save(updated);
     if (mounted) Navigator.of(context).pop(updated);
   }
