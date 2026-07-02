@@ -42,4 +42,11 @@ class MemoryRepository {
     final file = File('${dir.path}/$id.json');
     if (await file.exists()) await file.delete();
   }
+
+  static Future<void> deleteByPlaceId(String placeId) async {
+    final all = await loadAll();
+    for (final m in all.where((m) => m.placeId == placeId)) {
+      await delete(m.id);
+    }
+  }
 }

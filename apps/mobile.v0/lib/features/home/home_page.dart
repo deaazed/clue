@@ -96,8 +96,7 @@ class _HomePageState extends State<HomePage> {
       builder: (_) => const CreatePlaceSheet(),
     );
     if (place != null && mounted) {
-      _load();
-      context.push('/place', extra: place);
+      context.push('/place', extra: place).then((_) => _load());
     }
   }
 
@@ -109,7 +108,7 @@ class _HomePageState extends State<HomePage> {
         place: p,
         onView: () {
           Navigator.pop(context);
-          context.push('/place', extra: p);
+          context.push('/place', extra: p).then((_) => _load());
         },
         onAddClue: () {
           Navigator.pop(context);
@@ -172,6 +171,21 @@ class _HomePageState extends State<HomePage> {
                     );
                   },
                 ),
+
+              // Place boundary polygons
+              PolygonLayer(
+                polygons: _places
+                    .where((p) =>
+                        p.boundary != null && p.boundary!.length >= 3)
+                    .map((p) => Polygon(
+                          points: p.boundary!,
+                          color: ClueColors.amber.withValues(alpha: 0.07),
+                          borderColor:
+                              ClueColors.amber.withValues(alpha: 0.35),
+                          borderStrokeWidth: 1.5,
+                        ))
+                    .toList(),
+              ),
 
               // GPS accuracy radius
               if (_userPosition != null && _posAccuracy != null)

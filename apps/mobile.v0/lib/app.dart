@@ -8,6 +8,7 @@ import 'features/search/search_page.dart';
 import 'features/places/places_page.dart';
 import 'features/place_detail/place_detail_page.dart';
 import 'features/clue_recording/clue_recording_page.dart';
+import 'features/clue_recording/trace_shape_recording_page.dart';
 import 'features/onboarding/onboarding_page.dart';
 import 'features/logger/logger_page.dart';
 import 'features/sessions/sessions_page.dart';
@@ -55,6 +56,11 @@ final _router = GoRouter(
     GoRoute(
       path: '/record',
       builder: (_, state) => CluePinRecordingPage(place: state.extra as Place),
+    ),
+    GoRoute(
+      path: '/trace',
+      builder: (_, state) =>
+          TraceShapeRecordingPage(place: state.extra as Place),
     ),
     GoRoute(
       path: '/sessions/:id',
