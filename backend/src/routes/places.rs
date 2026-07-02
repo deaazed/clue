@@ -18,11 +18,12 @@ pub fn router() -> Router<PgPool> {
 
 #[derive(Deserialize)]
 struct PlaceBody {
-    id: Option<String>, // only required on POST
+    id: Option<String>,
     name: String,
     lat: f64,
     lng: f64,
     boundary: Option<Value>,
+    timestamp_ms: Option<i64>,
 }
 
 #[derive(Serialize, sqlx::FromRow)]
@@ -32,28 +33,30 @@ struct PlaceRow {
     lat: f64,
     lng: f64,
     boundary: Option<Value>,
+    timestamp_ms: i64,
 }
 
-/// POST /api/places — create or update (full upsert so renames sync correctly)
+/// POST /api/places — create or update (full upsert so renames and shapes sync correctly)
 async fn upsert(
     State(pool): State<PgPool>,
     Json(body): Json<PlaceBody>,
 ) -> Result<StatusCode, StatusCode> {
     let id = body.id.ok_or(StatusCode::BAD_REQUEST)?;
     sqlx::query(
-        "INSERT INTO places (id, name, lat, lng, boundary)
-         VALUES ($1, $2, $3, $4, $5)
+        "INSERT INTO places (id, name, lat, lng, boundary, timestamp_ms)
+         VALUES ($1, $2, $3, $4, $5, $6)
          ON CONFLICT (id) DO UPDATE
-           SET name     = EXCLUDED.name,
-               lat      = EXCLUDED.lat,
-               lng      = EXCLUDED.lng,
-               boundary = EXCLUDED.boundary",
+           SET name        = EXCLUDED.name,
+               lat         = EXCLUDED.lat,
+               lng         = EXCLUDED.lng,
+               boundary    = EXCLUDED.boundary",
     )
     .bind(&id)
     .bind(&body.name)
     .bind(body.lat)
     .bind(body.lng)
     .bind(&body.boundary)
+    .bind(body.timestamp_ms)
     .execute(&pool)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -64,7 +67,9 @@ async fn upsert(
 /// GET /api/places
 async fn list(State(pool): State<PgPool>) -> Result<Json<Vec<PlaceRow>>, StatusCode> {
     let rows = sqlx::query_as::<_, PlaceRow>(
-        "SELECT id, name, lat, lng, boundary FROM places ORDER BY created_at DESC",
+        "SELECT id, name, lat, lng, boundary,
+                COALESCE(timestamp_ms, (EXTRACT(EPOCH FROM created_at) * 1000)::bigint) AS timestamp_ms
+         FROM places ORDER BY created_at DESC",
     )
     .fetch_all(&pool)
     .await

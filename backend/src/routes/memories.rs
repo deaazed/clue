@@ -27,6 +27,7 @@ struct CreateMemory {
     lng: Option<f64>,
     ble_devices: Option<Value>,
     path: Option<Value>,
+    timestamp_ms: Option<i64>,
 }
 
 #[derive(Serialize, sqlx::FromRow)]
@@ -38,20 +39,21 @@ struct MemoryRow {
     note: Option<String>,
     lat: Option<f64>,
     lng: Option<f64>,
+    timestamp_ms: i64,
+    ble_devices: Option<Value>,
+    path: Option<Value>,
 }
 
 async fn create(
     State(pool): State<PgPool>,
     Json(body): Json<CreateMemory>,
 ) -> Result<StatusCode, StatusCode> {
-    let ble = body
-        .ble_devices
-        .unwrap_or_else(|| Value::Array(vec![]));
+    let ble = body.ble_devices.unwrap_or_else(|| Value::Array(vec![]));
     let icon = body.icon_type.unwrap_or_else(|| "other".into());
 
     sqlx::query(
-        "INSERT INTO memories (id, place_id, label, icon_type, note, lat, lng, ble_devices, path)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        "INSERT INTO memories (id, place_id, label, icon_type, note, lat, lng, ble_devices, path, timestamp_ms)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          ON CONFLICT (id) DO NOTHING",
     )
     .bind(&body.id)
@@ -63,6 +65,7 @@ async fn create(
     .bind(body.lng)
     .bind(&ble)
     .bind(&body.path)
+    .bind(body.timestamp_ms)
     .execute(&pool)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -72,7 +75,9 @@ async fn create(
 
 async fn list(State(pool): State<PgPool>) -> Result<Json<Vec<MemoryRow>>, StatusCode> {
     let rows = sqlx::query_as::<_, MemoryRow>(
-        "SELECT id, place_id, label, icon_type, note, lat, lng
+        "SELECT id, place_id, label, icon_type, note, lat, lng,
+                ble_devices, path,
+                COALESCE(timestamp_ms, (EXTRACT(EPOCH FROM created_at) * 1000)::bigint) AS timestamp_ms
          FROM memories ORDER BY created_at DESC",
     )
     .fetch_all(&pool)
@@ -89,7 +94,8 @@ async fn get_one(
     let row = sqlx::query_as::<_, (Value,)>(
         "SELECT row_to_json(m) FROM (
             SELECT id, place_id, label, icon_type, note, lat, lng,
-                   ble_devices, path, created_at
+                   ble_devices, path, created_at,
+                   COALESCE(timestamp_ms, (EXTRACT(EPOCH FROM created_at) * 1000)::bigint) AS timestamp_ms
             FROM memories WHERE id = $1
         ) m",
     )

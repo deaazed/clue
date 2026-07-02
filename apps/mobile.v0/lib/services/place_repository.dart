@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../models/place.dart';
+import 'api_client.dart';
 
 class PlaceRepository {
   static Future<Directory> _dir() async {
@@ -11,10 +12,15 @@ class PlaceRepository {
     return dir;
   }
 
-  static Future<void> save(Place place) async {
+  static Future<void> _saveLocally(Place place) async {
     final dir = await _dir();
     final file = File('${dir.path}/${place.id}.json');
     await file.writeAsString(jsonEncode(place.toJson()));
+  }
+
+  static Future<void> save(Place place) async {
+    await _saveLocally(place);
+    ApiClient.uploadPlace(place).catchError((_) {});
   }
 
   static Future<List<Place>> loadAll() async {
@@ -42,5 +48,19 @@ class PlaceRepository {
     final dir = await _dir();
     final file = File('${dir.path}/$id.json');
     if (await file.exists()) await file.delete();
+    ApiClient.deletePlace(id).catchError((_) {});
+  }
+
+  /// Called once at startup — if local cache is empty, pull from backend.
+  /// Silently no-ops on network failure.
+  static Future<void> restoreFromServer() async {
+    try {
+      final existing = await loadAll();
+      if (existing.isNotEmpty) return;
+      final places = await ApiClient.fetchPlaces();
+      for (final p in places) {
+        await _saveLocally(p);
+      }
+    } catch (_) {}
   }
 }
