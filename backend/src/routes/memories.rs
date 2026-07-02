@@ -1,7 +1,7 @@
 use axum::{
     extract::{Path, State},
     http::StatusCode,
-    routing::{get, post},
+    routing::{delete, get, post},
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
@@ -12,7 +12,8 @@ pub fn router() -> Router<PgPool> {
     Router::new()
         .route("/memories", post(create))
         .route("/memories", get(list))
-        .route("/memories/:id", get(get_one))
+        .route("/memories/{id}", get(get_one))
+        .route("/memories/{id}", delete(remove))
 }
 
 #[derive(Deserialize)]
@@ -99,4 +100,22 @@ async fn get_one(
     .ok_or(StatusCode::NOT_FOUND)?;
 
     Ok(Json(row.0))
+}
+
+/// DELETE /api/memories/:id
+async fn remove(
+    State(pool): State<PgPool>,
+    Path(id): Path<String>,
+) -> Result<StatusCode, StatusCode> {
+    let result = sqlx::query("DELETE FROM memories WHERE id = $1")
+        .bind(&id)
+        .execute(&pool)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    if result.rows_affected() == 0 {
+        Err(StatusCode::NOT_FOUND)
+    } else {
+        Ok(StatusCode::NO_CONTENT)
+    }
 }
