@@ -11,6 +11,10 @@ class Memory {
   final DateTime timestamp;
   final List<LatLng>? path;
   final String? placeId;
+  /// Traced shape — only meaningful for 'place'-type clues.
+  final List<LatLng>? boundary;
+  /// Private (false) items never leave the device.
+  final bool isPublic;
 
   const Memory({
     required this.id,
@@ -23,7 +27,31 @@ class Memory {
     required this.timestamp,
     this.path,
     this.placeId,
+    this.boundary,
+    this.isPublic = true,
   });
+
+  Memory copyWith({
+    String? label,
+    String? iconType,
+    String? note,
+    List<LatLng>? boundary,
+    bool? isPublic,
+  }) =>
+      Memory(
+        id: id,
+        label: label ?? this.label,
+        iconType: iconType ?? this.iconType,
+        note: note ?? this.note,
+        lat: lat,
+        lng: lng,
+        bleDevices: bleDevices,
+        timestamp: timestamp,
+        path: path,
+        placeId: placeId,
+        boundary: boundary ?? this.boundary,
+        isPublic: isPublic ?? this.isPublic,
+      );
 
   factory Memory.fromJson(Map<String, dynamic> json) => Memory(
         id: json['id'] as String,
@@ -46,6 +74,14 @@ class Memory {
           );
         }).toList(),
         placeId: json['place_id'] as String?,
+        boundary: (json['boundary'] as List<dynamic>?)?.map((e) {
+          final m = e as Map<String, dynamic>;
+          return LatLng(
+            (m['lat'] as num).toDouble(),
+            (m['lng'] as num).toDouble(),
+          );
+        }).toList(),
+        isPublic: json['is_public'] as bool? ?? true,
       );
 
   Map<String, dynamic> toJson() => {
@@ -62,5 +98,10 @@ class Memory {
               .map((p) => {'lat': p.latitude, 'lng': p.longitude})
               .toList(),
         if (placeId != null) 'place_id': placeId,
+        if (boundary != null && boundary!.length >= 3)
+          'boundary': boundary!
+              .map((p) => {'lat': p.latitude, 'lng': p.longitude})
+              .toList(),
+        'is_public': isPublic,
       };
 }

@@ -20,7 +20,12 @@ class PlaceRepository {
 
   static Future<void> save(Place place) async {
     await _saveLocally(place);
-    ApiClient.uploadPlace(place).catchError((_) {});
+    if (place.isPublic) {
+      ApiClient.uploadPlace(place).catchError((_) {});
+    } else {
+      // Was it public before? Make sure the server copy is gone.
+      ApiClient.deletePlace(place.id).catchError((_) {});
+    }
   }
 
   static Future<List<Place>> loadAll() async {

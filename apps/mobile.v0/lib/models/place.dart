@@ -7,6 +7,8 @@ class Place {
   final double lng;
   final DateTime timestamp;
   final List<LatLng>? boundary;
+  /// Private (false) items never leave the device.
+  final bool isPublic;
 
   const Place({
     required this.id,
@@ -15,6 +17,7 @@ class Place {
     required this.lng,
     required this.timestamp,
     this.boundary,
+    this.isPublic = true,
   });
 
   Place copyWith({
@@ -22,6 +25,7 @@ class Place {
     double? lat,
     double? lng,
     List<LatLng>? boundary,
+    bool? isPublic,
   }) =>
       Place(
         id: id,
@@ -30,6 +34,7 @@ class Place {
         lng: lng ?? this.lng,
         timestamp: timestamp,
         boundary: boundary ?? this.boundary,
+        isPublic: isPublic ?? this.isPublic,
       );
 
   factory Place.fromJson(Map<String, dynamic> json) => Place(
@@ -45,6 +50,7 @@ class Place {
                   (e['lng'] as num).toDouble(),
                 ))
             .toList(),
+        isPublic: json['is_public'] as bool? ?? true,
       );
 
   Map<String, dynamic> toJson() {
@@ -54,6 +60,7 @@ class Place {
       'lat': lat,
       'lng': lng,
       'timestamp_ms': timestamp.millisecondsSinceEpoch,
+      'is_public': isPublic,
     };
     if (boundary != null && boundary!.length >= 3) {
       m['boundary'] = boundary!

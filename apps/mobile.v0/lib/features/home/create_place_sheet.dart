@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import '../../models/place.dart';
 import '../../services/place_repository.dart';
 import '../../theme/colors.dart';
+import '../../widgets/visibility_toggle.dart';
 import 'map_picker_page.dart';
 
 class CreatePlaceSheet extends StatefulWidget {
@@ -24,6 +25,7 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
   LatLng? _gpsPosition;
   LatLng? _picked;
   bool _loadingGps = false;
+  bool _isPublic = true;
 
   LatLng? get _effectivePosition => _picked ?? _gpsPosition;
 
@@ -107,6 +109,7 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
       lat: location.latitude,
       lng: location.longitude,
       timestamp: DateTime.now(),
+      isPublic: _isPublic,
     );
 
     await PlaceRepository.save(place);
@@ -269,6 +272,14 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
               style: const TextStyle(fontSize: 12, color: Color(0xFFE53935)),
             ),
           ],
+
+          const SizedBox(height: 14),
+
+          // Privacy toggle
+          VisibilityToggle(
+            isPublic: _isPublic,
+            onChanged: (v) => setState(() => _isPublic = v),
+          ),
 
           const SizedBox(height: 16),
 

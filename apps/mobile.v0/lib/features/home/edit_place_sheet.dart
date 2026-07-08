@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../models/place.dart';
 import '../../services/place_repository.dart';
 import '../../theme/colors.dart';
+import '../../widgets/visibility_toggle.dart';
 
 class EditPlaceSheet extends StatefulWidget {
   const EditPlaceSheet({super.key, required this.place});
@@ -16,11 +17,13 @@ class _EditPlaceSheetState extends State<EditPlaceSheet> {
   late final TextEditingController _nameCtrl;
   bool _saving = false;
   String? _error;
+  late bool _isPublic;
 
   @override
   void initState() {
     super.initState();
     _nameCtrl = TextEditingController(text: widget.place.name);
+    _isPublic = widget.place.isPublic;
   }
 
   @override
@@ -39,7 +42,8 @@ class _EditPlaceSheetState extends State<EditPlaceSheet> {
       _saving = true;
       _error = null;
     });
-    final updated = widget.place.copyWith(name: name);
+    final updated =
+        widget.place.copyWith(name: name, isPublic: _isPublic);
     await PlaceRepository.save(updated);
     if (mounted) Navigator.of(context).pop(updated);
   }
@@ -66,7 +70,7 @@ class _EditPlaceSheetState extends State<EditPlaceSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Rename place',
+            'Edit place',
             style: TextStyle(
               fontFamily: GoogleFonts.bricolageGrotesque().fontFamily,
               fontWeight: FontWeight.w700,
@@ -134,6 +138,11 @@ class _EditPlaceSheetState extends State<EditPlaceSheet> {
               ),
             ),
           ],
+          const SizedBox(height: 14),
+          VisibilityToggle(
+            isPublic: _isPublic,
+            onChanged: (v) => setState(() => _isPublic = v),
+          ),
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,

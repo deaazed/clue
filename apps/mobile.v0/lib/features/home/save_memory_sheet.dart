@@ -6,6 +6,7 @@ import '../../models/place.dart';
 import '../../services/memory_repository.dart';
 import '../../theme/colors.dart';
 import '../../widgets/memory_card.dart' show memoryIcon;
+import '../../widgets/visibility_toggle.dart';
 
 const _iconTypes = [
   'item', 'place', 'parking', 'gate', 'outlet', 'restroom', 'other',
@@ -66,6 +67,7 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
       timestamp: DateTime.now(),
       path: widget.path.length >= 2 ? widget.path : null,
       placeId: widget.place.id,
+      isPublic: _isPublic,
     );
 
     await MemoryRepository.save(memory);
@@ -210,72 +212,9 @@ class _SaveMemorySheetState extends State<SaveMemorySheet> {
           const SizedBox(height: 13),
 
           // Privacy toggle
-          Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _isPublic = true),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: _isPublic ? const Color(0xFFF4E6D5) : cardBg,
-                      border: Border.all(
-                        color: _isPublic ? ClueColors.amber : borderColor,
-                        width: _isPublic ? 1.5 : 1,
-                      ),
-                      borderRadius: BorderRadius.circular(13),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.public, size: 16,
-                            color: _isPublic ? ClueColors.amber : mutedColor),
-                        const SizedBox(width: 7),
-                        Text('Public',
-                            style: TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w700,
-                              color: _isPublic ? const Color(0xFFB0672C) : mutedColor,
-                            )),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _isPublic = false),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: cardBg,
-                      border: Border.all(
-                        color: !_isPublic ? inkColor : borderColor,
-                        width: !_isPublic ? 1.5 : 1,
-                      ),
-                      borderRadius: BorderRadius.circular(13),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.lock_outline, size: 16,
-                            color: !_isPublic ? inkColor : mutedColor),
-                        const SizedBox(width: 7),
-                        Text('Just me',
-                            style: TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w600,
-                              color: !_isPublic ? inkColor : mutedColor,
-                            )),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          VisibilityToggle(
+            isPublic: _isPublic,
+            onChanged: (v) => setState(() => _isPublic = v),
           ),
           const SizedBox(height: 20),
 

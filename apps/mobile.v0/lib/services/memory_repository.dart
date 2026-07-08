@@ -20,7 +20,12 @@ class MemoryRepository {
 
   static Future<void> save(Memory memory) async {
     await _saveLocally(memory);
-    ApiClient.uploadMemory(memory).catchError((_) {});
+    if (memory.isPublic) {
+      ApiClient.uploadMemory(memory).catchError((_) {});
+    } else {
+      // Was it public before? Make sure the server copy is gone.
+      ApiClient.deleteMemory(memory.id).catchError((_) {});
+    }
   }
 
   static Future<List<Memory>> loadAll() async {
