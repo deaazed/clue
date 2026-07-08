@@ -169,6 +169,8 @@ class _MemoryDetailPageState extends State<MemoryDetailPage> {
                 options: MapOptions(
                   initialCenter: LatLng(m.lat!, m.lng!),
                   initialZoom: 17.0,
+                  minZoom: 3,
+                  maxZoom: 20,
                 ),
                 children: [
                   TileLayer(

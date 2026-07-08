@@ -156,6 +156,7 @@ class _HomePageState extends State<HomePage> {
             options: MapOptions(
               initialCenter: const LatLng(48.8566, 2.3522),
               initialZoom: 5,
+              minZoom: 3,
               maxZoom: 20,
               onTap: (_, latLng) {
                 for (final p in _places) {

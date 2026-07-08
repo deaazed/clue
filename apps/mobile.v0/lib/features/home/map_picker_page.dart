@@ -72,6 +72,8 @@ class _MapPickerPageState extends State<MapPickerPage> {
               initialCenter:
                   widget.initialPosition ?? const LatLng(48.8566, 2.3522),
               initialZoom: 16,
+              minZoom: 3,
+              maxZoom: 20,
             ),
             children: [
               TileLayer(

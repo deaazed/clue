@@ -192,6 +192,8 @@ class _CluePinRecordingPageState extends State<CluePinRecordingPage> {
             options: MapOptions(
               initialCenter: LatLng(widget.place.lat, widget.place.lng),
               initialZoom: 18.0,
+              minZoom: 14,
+              maxZoom: 20,
             ),
             children: [
               TileLayer(

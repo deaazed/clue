@@ -271,6 +271,8 @@ class _TraceShapeRecordingPageState extends State<TraceShapeRecordingPage> {
             options: MapOptions(
               initialCenter: LatLng(widget.place.lat, widget.place.lng),
               initialZoom: 18.0,
+              minZoom: 14,
+              maxZoom: 20,
               onTap: _mode == _TraceMode.draw && !isPreview
                   ? (_, ll) => _addVertex(ll)
                   : null,
