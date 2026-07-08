@@ -86,6 +86,20 @@ class _PlaceDetailPageState extends State<PlaceDetailPage> {
     }
   }
 
+  Future<void> _toggleVisibility() async {
+    final updated = _place.copyWith(isPublic: !_place.isPublic);
+    await PlaceRepository.save(updated);
+    if (!mounted) return;
+    setState(() => _place = updated);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(updated.isPublic
+            ? '"${updated.name}" is now public'
+            : '"${updated.name}" is now private — removed from the hive'),
+      ),
+    );
+  }
+
   Future<void> _deletePlace() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -125,10 +139,22 @@ class _PlaceDetailPageState extends State<PlaceDetailPage> {
           children: [
             ListTile(
               leading: const Icon(Icons.edit_outlined),
-              title: const Text('Rename'),
+              title: const Text('Edit name & privacy'),
               onTap: () {
                 Navigator.pop(context);
                 _rename();
+              },
+            ),
+            ListTile(
+              leading: Icon(_place.isPublic
+                  ? Icons.lock_outline
+                  : Icons.public),
+              title: Text(_place.isPublic
+                  ? 'Make private'
+                  : 'Make public'),
+              onTap: () {
+                Navigator.pop(context);
+                _toggleVisibility();
               },
             ),
             ListTile(
@@ -313,16 +339,59 @@ class _PlaceDetailPageState extends State<PlaceDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    _place.name,
-                    style: TextStyle(
-                      fontFamily:
-                          GoogleFonts.bricolageGrotesque().fontFamily,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 26,
-                      letterSpacing: -0.5,
-                      color: isDark ? ClueColors.paper : ClueColors.ink,
-                    ),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          _place.name,
+                          style: TextStyle(
+                            fontFamily:
+                                GoogleFonts.bricolageGrotesque().fontFamily,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 26,
+                            letterSpacing: -0.5,
+                            color:
+                                isDark ? ClueColors.paper : ClueColors.ink,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (!_place.isPublic) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: (isDark
+                                    ? ClueColors.paper
+                                    : ClueColors.ink)
+                                .withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.lock_outline,
+                                  size: 11,
+                                  color: isDark
+                                      ? const Color(0xFF8A7F74)
+                                      : const Color(0xFF8A8172)),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Private',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark
+                                      ? const Color(0xFF8A7F74)
+                                      : const Color(0xFF8A8172),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 3),
                   Text(
