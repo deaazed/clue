@@ -2,12 +2,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../config.dart';
 import '../../models/memory.dart';
+import '../../services/memory_repository.dart';
+import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/memory_card.dart';
+import '../../widgets/visibility_toggle.dart';
+import '../clue_recording/trace_shape_recording_page.dart';
 
 class MemoryDetailPage extends StatefulWidget {
   const MemoryDetailPage({super.key, required this.memory});
@@ -18,6 +23,7 @@ class MemoryDetailPage extends StatefulWidget {
 }
 
 class _MemoryDetailPageState extends State<MemoryDetailPage> {
+  late Memory _memory;
   double? _distanceMeters;
   LatLng? _userPosition;
   StreamSubscription<Position>? _positionSub;
@@ -25,7 +31,40 @@ class _MemoryDetailPageState extends State<MemoryDetailPage> {
   @override
   void initState() {
     super.initState();
+    _memory = widget.memory;
     if (widget.memory.lat != null) _startPositionStream();
+  }
+
+  Future<void> _editClue() async {
+    final updated = await showModalBottomSheet<Memory>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => _EditClueSheet(memory: _memory),
+    );
+    if (updated != null && mounted) {
+      setState(() => _memory = updated);
+    }
+  }
+
+  Future<void> _traceShape() async {
+    final m = _memory;
+    if (m.lat == null) return;
+    final updated = await context.push<Object?>(
+      '/trace',
+      extra: TraceShapeArgs(
+        center: LatLng(m.lat!, m.lng!),
+        title: m.label,
+        onSave: (pts, _) async {
+          final u = m.copyWith(boundary: pts);
+          await MemoryRepository.save(u);
+          return u;
+        },
+      ),
+    );
+    if (updated is Memory && mounted) {
+      setState(() => _memory = updated);
+    }
   }
 
   void _startPositionStream() {
@@ -60,7 +99,7 @@ class _MemoryDetailPageState extends State<MemoryDetailPage> {
   }
 
   void _share() {
-    final m = widget.memory;
+    final m = _memory;
     final typeLabel = switch (m.iconType) {
       'item' => 'Item',
       'place' => 'Place',
@@ -87,7 +126,7 @@ class _MemoryDetailPageState extends State<MemoryDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final m = widget.memory;
+    final m = _memory;
     final cs = Theme.of(context).colorScheme;
     final color = memoryColor(m.iconType);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -97,6 +136,11 @@ class _MemoryDetailPageState extends State<MemoryDetailPage> {
         backgroundColor: cs.surface,
         surfaceTintColor: Colors.transparent,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: 'Edit clue',
+            onPressed: _editClue,
+          ),
           IconButton(
             icon: const Icon(Icons.share_outlined),
             tooltip: 'Share',
@@ -119,15 +163,19 @@ class _MemoryDetailPageState extends State<MemoryDetailPage> {
               children: [
                 Hero(
                   tag: 'memory_icon_${m.id}',
-                  child: Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.15),
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.iconRadius),
+                  child: GestureDetector(
+                    onTap: _editClue,
+                    child: Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.15),
+                        borderRadius:
+                            BorderRadius.circular(AppSpacing.iconRadius),
+                      ),
+                      child:
+                          Icon(memoryIcon(m.iconType), color: color, size: 26),
                     ),
-                    child: Icon(memoryIcon(m.iconType), color: color, size: 26),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
@@ -189,6 +237,18 @@ class _MemoryDetailPageState extends State<MemoryDetailPage> {
                     maxNativeZoom: 19,
                     userAgentPackageName: 'com.clue',
                   ),
+                  // Traced boundary — place-type clues
+                  if (m.boundary != null && m.boundary!.length >= 3)
+                    PolygonLayer(
+                      polygons: [
+                        Polygon(
+                          points: m.boundary!,
+                          color: color.withValues(alpha: 0.08),
+                          borderColor: color.withValues(alpha: 0.4),
+                          borderStrokeWidth: 1.5,
+                        ),
+                      ],
+                    ),
                   // Recorded path breadcrumbs
                   if (m.path != null && m.path!.length > 1)
                     PolylineLayer(
@@ -268,6 +328,47 @@ class _MemoryDetailPageState extends State<MemoryDetailPage> {
               ),
             ),
 
+          // Trace shape CTA — clues whose type is 'place' can be traced
+          if (m.iconType == 'place' && m.lat != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
+              child: GestureDetector(
+                onTap: _traceShape,
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                  decoration: BoxDecoration(
+                    color: ClueColors.amber.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: ClueColors.amber.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.pentagon_outlined,
+                          size: 20, color: ClueColors.amber),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          m.boundary != null && m.boundary!.length >= 3
+                              ? 'Update this place\'s shape'
+                              : 'Trace this place\'s shape',
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFB0672C),
+                          ),
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right,
+                          size: 18, color: ClueColors.amber),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
           // Info rows
           Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
@@ -341,6 +442,158 @@ class _MemoryDetailPageState extends State<MemoryDetailPage> {
     final h = dt.hour.toString().padLeft(2, '0');
     final min = dt.minute.toString().padLeft(2, '0');
     return '${months[dt.month - 1]} ${dt.day}, ${dt.year} · $h:$min';
+  }
+}
+
+const _iconTypes = [
+  'item', 'place', 'parking', 'gate', 'outlet', 'restroom', 'other',
+];
+const _iconLabels = [
+  'Item', 'Place', 'Parking', 'Gate', 'Outlet', 'Restroom', 'Other',
+];
+
+/// Bottom sheet to change a clue's type and visibility.
+class _EditClueSheet extends StatefulWidget {
+  const _EditClueSheet({required this.memory});
+  final Memory memory;
+
+  @override
+  State<_EditClueSheet> createState() => _EditClueSheetState();
+}
+
+class _EditClueSheetState extends State<_EditClueSheet> {
+  late String _selectedIcon;
+  late bool _isPublic;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIcon = widget.memory.iconType;
+    _isPublic = widget.memory.isPublic;
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    final updated = widget.memory.copyWith(
+      iconType: _selectedIcon,
+      isPublic: _isPublic,
+    );
+    await MemoryRepository.save(updated);
+    if (mounted) Navigator.of(context).pop(updated);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF2E2820) : Colors.white;
+    final borderColor =
+        isDark ? const Color(0xFF3A342C) : const Color(0xFFE9E0D1);
+    final mutedColor =
+        isDark ? const Color(0xFF8A7F74) : const Color(0xFF8A8172);
+    final inkColor = isDark ? ClueColors.paper : ClueColors.ink;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 22,
+        right: 22,
+        top: 12,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 30,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Edit clue',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 20,
+              letterSpacing: -0.4,
+              color: inkColor,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            widget.memory.label,
+            style: TextStyle(fontSize: 12.5, color: mutedColor),
+          ),
+          const SizedBox(height: 18),
+
+          // Type picker — same chips as the save sheet
+          SizedBox(
+            height: 62,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _iconTypes.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (context, i) {
+                final type = _iconTypes[i];
+                final selected = _selectedIcon == type;
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedIcon = type),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 70,
+                    decoration: BoxDecoration(
+                      color: selected ? const Color(0xFFF4E6D5) : cardBg,
+                      border: Border.all(
+                        color: selected ? ClueColors.amber : borderColor,
+                        width: selected ? 1.5 : 1,
+                      ),
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(memoryIcon(type),
+                            size: 18,
+                            color:
+                                selected ? ClueColors.amber : mutedColor),
+                        const SizedBox(height: 4),
+                        Text(
+                          _iconLabels[i],
+                          style: TextStyle(
+                            fontSize: 10,
+                            color:
+                                selected ? ClueColors.amber : mutedColor,
+                            fontWeight: selected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          VisibilityToggle(
+            isPublic: _isPublic,
+            onChanged: (v) => setState(() => _isPublic = v),
+          ),
+          const SizedBox(height: 20),
+
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _saving ? null : _save,
+              child: _saving
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Save'),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

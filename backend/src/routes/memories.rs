@@ -27,6 +27,7 @@ struct CreateMemory {
     lng: Option<f64>,
     ble_devices: Option<Value>,
     path: Option<Value>,
+    boundary: Option<Value>,
     timestamp_ms: Option<i64>,
 }
 
@@ -42,6 +43,7 @@ struct MemoryRow {
     timestamp_ms: i64,
     ble_devices: Option<Value>,
     path: Option<Value>,
+    boundary: Option<Value>,
 }
 
 async fn create(
@@ -52,9 +54,17 @@ async fn create(
     let icon = body.icon_type.unwrap_or_else(|| "other".into());
 
     sqlx::query(
-        "INSERT INTO memories (id, place_id, label, icon_type, note, lat, lng, ble_devices, path, timestamp_ms)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-         ON CONFLICT (id) DO NOTHING",
+        "INSERT INTO memories (id, place_id, label, icon_type, note, lat, lng, ble_devices, path, boundary, timestamp_ms)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+         ON CONFLICT (id) DO UPDATE
+           SET label       = EXCLUDED.label,
+               icon_type   = EXCLUDED.icon_type,
+               note        = EXCLUDED.note,
+               lat         = EXCLUDED.lat,
+               lng         = EXCLUDED.lng,
+               ble_devices = EXCLUDED.ble_devices,
+               path        = EXCLUDED.path,
+               boundary    = EXCLUDED.boundary",
     )
     .bind(&body.id)
     .bind(&body.place_id)
@@ -65,6 +75,7 @@ async fn create(
     .bind(body.lng)
     .bind(&ble)
     .bind(&body.path)
+    .bind(&body.boundary)
     .bind(body.timestamp_ms)
     .execute(&pool)
     .await
@@ -76,7 +87,7 @@ async fn create(
 async fn list(State(pool): State<PgPool>) -> Result<Json<Vec<MemoryRow>>, StatusCode> {
     let rows = sqlx::query_as::<_, MemoryRow>(
         "SELECT id, place_id, label, icon_type, note, lat, lng,
-                ble_devices, path,
+                ble_devices, path, boundary,
                 COALESCE(timestamp_ms, (EXTRACT(EPOCH FROM created_at) * 1000)::bigint) AS timestamp_ms
          FROM memories ORDER BY created_at DESC",
     )
@@ -94,7 +105,7 @@ async fn get_one(
     let row = sqlx::query_as::<_, (Value,)>(
         "SELECT row_to_json(m) FROM (
             SELECT id, place_id, label, icon_type, note, lat, lng,
-                   ble_devices, path, created_at,
+                   ble_devices, path, boundary, created_at,
                    COALESCE(timestamp_ms, (EXTRACT(EPOCH FROM created_at) * 1000)::bigint) AS timestamp_ms
             FROM memories WHERE id = $1
         ) m",

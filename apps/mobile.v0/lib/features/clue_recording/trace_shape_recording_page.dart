@@ -6,18 +6,32 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import '../../config.dart';
-import '../../models/place.dart';
 import '../../services/pdr_service.dart';
-import '../../services/place_repository.dart';
 import '../../theme/colors.dart';
 
 enum _TraceMode { walk, draw }
 
 enum _TraceState { active, preview, saving }
 
+/// Configuration for [TraceShapeRecordingPage] — works for Places and for
+/// 'place'-type clues alike. [onSave] persists the boundary and returns the
+/// updated object, which the page pops back to the caller.
+class TraceShapeArgs {
+  const TraceShapeArgs({
+    required this.center,
+    required this.title,
+    required this.onSave,
+  });
+
+  final LatLng center;
+  final String title;
+  final Future<Object?> Function(List<LatLng> boundary, LatLng centroid)
+      onSave;
+}
+
 class TraceShapeRecordingPage extends StatefulWidget {
-  const TraceShapeRecordingPage({super.key, required this.place});
-  final Place place;
+  const TraceShapeRecordingPage({super.key, required this.args});
+  final TraceShapeArgs args;
 
   @override
   State<TraceShapeRecordingPage> createState() =>
@@ -225,18 +239,13 @@ class _TraceShapeRecordingPageState extends State<TraceShapeRecordingPage> {
     final pts = List<LatLng>.unmodifiable(
         _mode == _TraceMode.walk ? _gpsPath : _drawn);
 
-    // Move place pin to the centroid of the boundary
     final centLat =
         pts.map((p) => p.latitude).reduce((a, b) => a + b) / pts.length;
     final centLng =
         pts.map((p) => p.longitude).reduce((a, b) => a + b) / pts.length;
 
-    final updated = widget.place.copyWith(
-      boundary: pts,
-      lat: centLat,
-      lng: centLng,
-    );
-    await PlaceRepository.save(updated);
+    final updated =
+        await widget.args.onSave(pts, LatLng(centLat, centLng));
     if (mounted) Navigator.of(context).pop(updated);
   }
 
@@ -269,7 +278,7 @@ class _TraceShapeRecordingPageState extends State<TraceShapeRecordingPage> {
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
-              initialCenter: LatLng(widget.place.lat, widget.place.lng),
+              initialCenter: widget.args.center,
               initialZoom: 18.0,
               minZoom: 14,
               maxZoom: 20,
@@ -449,7 +458,7 @@ class _TraceShapeRecordingPageState extends State<TraceShapeRecordingPage> {
                       child: Text(
                         isPreview
                             ? 'Shape preview'
-                            : 'Trace — ${widget.place.name}',
+                            : 'Trace — ${widget.args.title}',
                         style: TextStyle(
                           fontFamily:
                               GoogleFonts.bricolageGrotesque().fontFamily,

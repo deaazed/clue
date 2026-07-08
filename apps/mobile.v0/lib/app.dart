@@ -64,7 +64,7 @@ final _router = GoRouter(
     GoRoute(
       path: '/trace',
       builder: (_, state) =>
-          TraceShapeRecordingPage(place: state.extra as Place),
+          TraceShapeRecordingPage(args: state.extra as TraceShapeArgs),
     ),
     GoRoute(
       path: '/sessions/:id',

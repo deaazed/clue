@@ -10,6 +10,7 @@ import '../../services/memory_repository.dart';
 import '../../services/place_repository.dart';
 import '../../theme/colors.dart';
 import '../../widgets/memory_card.dart';
+import '../clue_recording/trace_shape_recording_page.dart';
 import '../home/edit_place_sheet.dart';
 
 class PlaceDetailPage extends StatefulWidget {
@@ -51,9 +52,24 @@ class _PlaceDetailPageState extends State<PlaceDetailPage> {
   }
 
   Future<void> _traceShape() async {
-    final updated =
-        await context.push<Place>('/trace', extra: _place);
-    if (updated != null && mounted) {
+    final updated = await context.push<Object?>(
+      '/trace',
+      extra: TraceShapeArgs(
+        center: LatLng(_place.lat, _place.lng),
+        title: _place.name,
+        onSave: (pts, centroid) async {
+          // Move the place pin to the centroid of the traced boundary
+          final p = _place.copyWith(
+            boundary: pts,
+            lat: centroid.latitude,
+            lng: centroid.longitude,
+          );
+          await PlaceRepository.save(p);
+          return p;
+        },
+      ),
+    );
+    if (updated is Place && mounted) {
       setState(() => _place = updated);
     }
   }
