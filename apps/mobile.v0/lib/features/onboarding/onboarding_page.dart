@@ -14,22 +14,22 @@ const _steps = [
   (
     icon: Icons.storefront_outlined,
     title: 'Add a place',
-    desc: 'Name the venue you\'re in — then walk or draw its shape right onto the map.',
+    desc: 'Name the venue, then walk or draw its shape on the map.',
   ),
   (
     icon: Icons.location_on_outlined,
     title: 'Drop clues inside',
-    desc: 'Walk to an item, mark the spot, and leave a quick note so you find it again.',
+    desc: 'Mark the spot where things are and leave a quick note.',
   ),
   (
     icon: Icons.lock_outline,
     title: 'Public or private',
-    desc: 'Keep clues just for you, or make them public so others find things faster too.',
+    desc: 'Keep clues to yourself or share them with everyone.',
   ),
   (
     icon: Icons.emoji_events_outlined,
     title: 'Get credit',
-    desc: 'Sign in (optional) and your public clues count towards the hive leaderboard.',
+    desc: 'Optional sign-in puts your clues on the hive leaderboard.',
   ),
 ];
 
@@ -119,254 +119,340 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
     return Scaffold(
       backgroundColor: bg,
+      // Fits a single screen: compact header row, 2x2 feature grid, slim
+      // banner. Spacers absorb extra height; the scroll view only ever
+      // activates on screens too small to hold the minimum layout.
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(28, 60, 28, 40),
-          child: Column(
-            children: [
-              // Logo + title
-              Column(
-                children: [
-                  Container(
-                    width: 118,
-                    height: 118,
-                    decoration: BoxDecoration(
-                      color: cardBg,
-                      border: Border.all(color: borderColor),
-                      borderRadius: BorderRadius.circular(34),
-                      boxShadow: [
-                        BoxShadow(
-                          blurRadius: 30,
-                          offset: const Offset(0, 12),
-                          color: Colors.black.withValues(alpha: 0.14),
-                        ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Image.asset(
-                        'assets/logo-clue.png',
-                        fit: BoxFit.contain,
-                        color: isDark ? ClueColors.paper : null,
-                        colorBlendMode: isDark ? BlendMode.srcIn : null,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 22),
-                  Text(
-                    'clue',
-                    style: TextStyle(
-                      fontFamily: GoogleFonts.bricolageGrotesque().fontFamily,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 30,
-                      letterSpacing: -0.6,
-                      color: inkColor,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    'Never lose your place again',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: GoogleFonts.bricolageGrotesque().fontFamily,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 27,
-                      height: 1.16,
-                      letterSpacing: -0.4,
-                      color: inkColor,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Clue remembers where things are inside the buildings you visit.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14.5,
-                      height: 1.5,
-                      color: mutedColor,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 30),
-
-              // Feature cards
-              ...(_steps.map((s) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: cardBg,
-                        border: Border.all(color: borderColor),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
-                      child: Row(
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 18, 24, 14),
+                  child: Column(
+                    children: [
+                      // Logo + wordmark on one row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Container(
-                            width: 44,
-                            height: 44,
+                            width: 58,
+                            height: 58,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF4E6D5),
-                              borderRadius: BorderRadius.circular(13),
-                            ),
-                            child: Icon(s.icon,
-                                size: 22, color: ClueColors.amber),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  s.title,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 15,
-                                    color: inkColor,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  s.desc,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    height: 1.4,
-                                    color: mutedColor,
-                                  ),
+                              color: cardBg,
+                              border: Border.all(color: borderColor),
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: [
+                                BoxShadow(
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 6),
+                                  color:
+                                      Colors.black.withValues(alpha: 0.12),
                                 ),
                               ],
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: Image.asset(
+                                'assets/logo-clue.png',
+                                fit: BoxFit.contain,
+                                color: isDark ? ClueColors.paper : null,
+                                colorBlendMode:
+                                    isDark ? BlendMode.srcIn : null,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Text(
+                            'clue',
+                            style: TextStyle(
+                              fontFamily: GoogleFonts.bricolageGrotesque()
+                                  .fontFamily,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 28,
+                              letterSpacing: -0.6,
+                              color: inkColor,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ))),
 
-              const SizedBox(height: 22),
+                      const Spacer(),
 
-              // Hive community banner
-              Container(
-                decoration: BoxDecoration(
-                  color: ClueColors.ink,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-                child: Row(
-                  children: [
-                    Image.asset(
-                      'assets/logo-clue.png',
-                      width: 34,
-                      height: 34,
-                      fit: BoxFit.contain,
-                      color: Colors.white,
-                      colorBlendMode: BlendMode.srcIn,
-                    ),
-                    const SizedBox(width: 11),
-                    Expanded(
-                      child: RichText(
-                        text: TextSpan(
-                          style: const TextStyle(
-                            fontSize: 12.5,
-                            height: 1.45,
-                            color: Color(0xFFE9E1D4),
-                          ),
+                      Text(
+                        'Never lose your place again',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily:
+                              GoogleFonts.bricolageGrotesque().fontFamily,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 23,
+                          height: 1.15,
+                          letterSpacing: -0.4,
+                          color: inkColor,
+                        ),
+                      ),
+                      const SizedBox(height: 7),
+                      Text(
+                        'Clue remembers where things are inside the buildings you visit.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.45,
+                          color: mutedColor,
+                        ),
+                      ),
+
+                      const Spacer(),
+
+                      // Feature grid — 2x2 compact cards
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                              child: _FeatureCard(
+                                  step: _steps[0],
+                                  cardBg: cardBg,
+                                  borderColor: borderColor,
+                                  inkColor: inkColor,
+                                  mutedColor: mutedColor)),
+                          const SizedBox(width: 10),
+                          Expanded(
+                              child: _FeatureCard(
+                                  step: _steps[1],
+                                  cardBg: cardBg,
+                                  borderColor: borderColor,
+                                  inkColor: inkColor,
+                                  mutedColor: mutedColor)),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                              child: _FeatureCard(
+                                  step: _steps[2],
+                                  cardBg: cardBg,
+                                  borderColor: borderColor,
+                                  inkColor: inkColor,
+                                  mutedColor: mutedColor)),
+                          const SizedBox(width: 10),
+                          Expanded(
+                              child: _FeatureCard(
+                                  step: _steps[3],
+                                  cardBg: cardBg,
+                                  borderColor: borderColor,
+                                  inkColor: inkColor,
+                                  mutedColor: mutedColor)),
+                        ],
+                      ),
+
+                      const Spacer(),
+
+                      // Hive community banner — slim
+                      Container(
+                        decoration: BoxDecoration(
+                          color: ClueColors.ink,
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        padding: const EdgeInsets.fromLTRB(14, 11, 14, 11),
+                        child: Row(
                           children: [
-                            const TextSpan(
-                                text:
-                                    'Every clue you drop teaches the hive. '),
-                            if (_clueCount != null && _placeCount != null &&
-                                (_clueCount! > 0 || _placeCount! > 0)) ...[
-                              TextSpan(
-                                text:
-                                    '$_clueCount clue${_clueCount == 1 ? '' : 's'} across $_placeCount place${_placeCount == 1 ? '' : 's'}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFFF3B778),
+                            Image.asset(
+                              'assets/logo-clue.png',
+                              width: 26,
+                              height: 26,
+                              fit: BoxFit.contain,
+                              color: Colors.white,
+                              colorBlendMode: BlendMode.srcIn,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: RichText(
+                                text: TextSpan(
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    height: 1.4,
+                                    color: Color(0xFFE9E1D4),
+                                  ),
+                                  children: [
+                                    const TextSpan(
+                                        text:
+                                            'Every clue you drop teaches the hive. '),
+                                    if (_clueCount != null &&
+                                        _placeCount != null &&
+                                        (_clueCount! > 0 ||
+                                            _placeCount! > 0)) ...[
+                                      TextSpan(
+                                        text:
+                                            '$_clueCount clue${_clueCount == 1 ? '' : 's'} across $_placeCount place${_placeCount == 1 ? '' : 's'}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFFF3B778),
+                                        ),
+                                      ),
+                                      const TextSpan(
+                                          text: ' mapped so far.'),
+                                    ] else
+                                      const TextSpan(
+                                          text:
+                                              'Help map new places as you go.'),
+                                  ],
                                 ),
                               ),
-                              const TextSpan(text: ' mapped so far.'),
-                            ] else
-                              const TextSpan(
-                                  text:
-                                      'Help map new places as you go.'),
+                            ),
                           ],
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
 
-              const SizedBox(height: 26),
+                      const SizedBox(height: 14),
 
-              // Get started button
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _loading ? null : _getStarted,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: ClueColors.amber,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    textStyle: GoogleFonts.hankenGrotesk(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                    ),
-                    shadowColor: ClueColors.amber.withValues(alpha: 0.5),
-                    elevation: 10,
-                  ),
-                  child: _loading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2.5, color: Colors.white),
-                        )
-                      : const Text('Get started'),
-                ),
-              ),
-
-              const SizedBox(height: 14),
-
-              // Restore link — pulls existing data back after a reinstall
-              _restoring
-                  ? SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: mutedColor),
-                    )
-                  : GestureDetector(
-                      onTap: _loading ? null : _restore,
-                      behavior: HitTestBehavior.opaque,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 6),
-                        child: Text.rich(
-                          TextSpan(
-                            style:
-                                TextStyle(fontSize: 13.5, color: mutedColor),
-                            children: [
-                              const TextSpan(text: 'Already used Clue? '),
-                              TextSpan(
-                                text: 'Restore my clues',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  color: inkColor,
-                                ),
-                              ),
-                            ],
+                      // Get started button
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: _loading ? null : _getStarted,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: ClueColors.amber,
+                            foregroundColor: Colors.white,
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 15),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            textStyle: GoogleFonts.hankenGrotesk(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                            ),
+                            shadowColor:
+                                ClueColors.amber.withValues(alpha: 0.5),
+                            elevation: 10,
                           ),
+                          child: _loading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Colors.white),
+                                )
+                              : const Text('Get started'),
                         ),
                       ),
-                    ),
-            ],
+
+                      const SizedBox(height: 6),
+
+                      // Restore link — pulls existing data back after a reinstall
+                      SizedBox(
+                        height: 36,
+                        child: Center(
+                          child: _restoring
+                              ? SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: mutedColor),
+                                )
+                              : GestureDetector(
+                                  onTap: _loading ? null : _restore,
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 6),
+                                    child: Text.rich(
+                                      TextSpan(
+                                        style: TextStyle(
+                                            fontSize: 13,
+                                            color: mutedColor),
+                                        children: [
+                                          const TextSpan(
+                                              text:
+                                                  'Already used Clue? '),
+                                          TextSpan(
+                                            text: 'Restore my clues',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              color: inkColor,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _FeatureCard extends StatelessWidget {
+  const _FeatureCard({
+    required this.step,
+    required this.cardBg,
+    required this.borderColor,
+    required this.inkColor,
+    required this.mutedColor,
+  });
+
+  final ({IconData icon, String title, String desc}) step;
+  final Color cardBg;
+  final Color borderColor;
+  final Color inkColor;
+  final Color mutedColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4E6D5),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(step.icon, size: 18, color: ClueColors.amber),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            step.title,
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 12.5,
+              color: inkColor,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            step.desc,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 11,
+              height: 1.35,
+              color: mutedColor,
+            ),
+          ),
+        ],
       ),
     );
   }
