@@ -158,6 +158,12 @@ class _HomePageState extends State<HomePage> {
               initialZoom: 5,
               minZoom: 3,
               maxZoom: 20,
+              cameraConstraint: CameraConstraint.contain(
+                bounds: LatLngBounds(
+                  const LatLng(-85.05112878, -180),
+                  const LatLng(85.05112878, 180),
+                ),
+              ),
               onTap: (_, latLng) {
                 for (final p in _places) {
                   if (p.boundary != null &&

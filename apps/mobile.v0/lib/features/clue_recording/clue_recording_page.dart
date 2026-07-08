@@ -194,6 +194,12 @@ class _CluePinRecordingPageState extends State<CluePinRecordingPage> {
               initialZoom: 18.0,
               minZoom: 14,
               maxZoom: 20,
+              cameraConstraint: CameraConstraint.contain(
+                bounds: LatLngBounds(
+                  const LatLng(-85.05112878, -180),
+                  const LatLng(85.05112878, 180),
+                ),
+              ),
             ),
             children: [
               TileLayer(

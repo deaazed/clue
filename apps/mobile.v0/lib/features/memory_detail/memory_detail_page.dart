@@ -171,6 +171,12 @@ class _MemoryDetailPageState extends State<MemoryDetailPage> {
                   initialZoom: 17.0,
                   minZoom: 3,
                   maxZoom: 20,
+                  cameraConstraint: CameraConstraint.contain(
+                    bounds: LatLngBounds(
+                      const LatLng(-85.05112878, -180),
+                      const LatLng(85.05112878, 180),
+                    ),
+                  ),
                 ),
                 children: [
                   TileLayer(

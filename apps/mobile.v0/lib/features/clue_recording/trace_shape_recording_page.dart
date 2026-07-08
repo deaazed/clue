@@ -273,6 +273,12 @@ class _TraceShapeRecordingPageState extends State<TraceShapeRecordingPage> {
               initialZoom: 18.0,
               minZoom: 14,
               maxZoom: 20,
+              cameraConstraint: CameraConstraint.contain(
+                bounds: LatLngBounds(
+                  const LatLng(-85.05112878, -180),
+                  const LatLng(85.05112878, 180),
+                ),
+              ),
               onTap: _mode == _TraceMode.draw && !isPreview
                   ? (_, ll) => _addVertex(ll)
                   : null,

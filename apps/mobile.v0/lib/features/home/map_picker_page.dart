@@ -74,6 +74,12 @@ class _MapPickerPageState extends State<MapPickerPage> {
               initialZoom: 16,
               minZoom: 3,
               maxZoom: 20,
+              cameraConstraint: CameraConstraint.contain(
+                bounds: LatLngBounds(
+                  const LatLng(-85.05112878, -180),
+                  const LatLng(85.05112878, 180),
+                ),
+              ),
             ),
             children: [
               TileLayer(
