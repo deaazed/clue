@@ -4,9 +4,18 @@ import '../config.dart';
 import '../models/memory.dart';
 import '../models/place.dart';
 import '../models/session.dart';
+import 'auth_service.dart';
 
 class ApiClient {
   static const _timeout = Duration(seconds: 15);
+
+  /// JSON headers, with the bearer token when signed in so public uploads
+  /// are attributed to the user.
+  static Map<String, String> _jsonHeaders() => {
+        'Content-Type': 'application/json',
+        if (AuthService.token != null)
+          'Authorization': 'Bearer ${AuthService.token}',
+      };
 
   static Future<void> uploadSession(Session session) async {
     final res = await http
@@ -28,7 +37,7 @@ class ApiClient {
     await http
         .post(
           Uri.parse('$kBackendUrl/api/places'),
-          headers: {'Content-Type': 'application/json'},
+          headers: _jsonHeaders(),
           body: jsonEncode(place.toJson()),
         )
         .timeout(_timeout);
@@ -57,7 +66,7 @@ class ApiClient {
     await http
         .post(
           Uri.parse('$kBackendUrl/api/memories'),
-          headers: {'Content-Type': 'application/json'},
+          headers: _jsonHeaders(),
           body: jsonEncode(memory.toJson()),
         )
         .timeout(_timeout);
@@ -78,5 +87,21 @@ class ApiClient {
     return list
         .map((e) => Memory.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  // ── Community ─────────────────────────────────────────────────────────────
+
+  /// {contributors: [{user_id, display_name, contributions}],
+  ///  anonymous_contributions: int} — null on any failure.
+  static Future<Map<String, dynamic>?> fetchCommunityTop() async {
+    try {
+      final res = await http
+          .get(Uri.parse('$kBackendUrl/api/community/top'))
+          .timeout(_timeout);
+      if (res.statusCode != 200) return null;
+      return jsonDecode(res.body) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
   }
 }

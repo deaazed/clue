@@ -8,3 +8,9 @@ const String kTilesUrl = 'http://37.27.255.248:3000/tiles/tiles.pmtiles';
 
 // OSM Standard raster — free, no API key, shows indoor room detail at zoom 17-18.
 const String kOsmTilesUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+// Google Sign-In: the *Web application* OAuth client ID from Google Cloud
+// Console (used as serverClientId so Android returns an ID token the backend
+// can verify). Leave empty until configured — the Google button hides itself
+// and email sign-in still works. See docs/GOOGLE_SIGNIN_SETUP.md.
+const String kGoogleServerClientId = '';

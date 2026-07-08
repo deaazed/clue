@@ -46,6 +46,9 @@ dependencies:
   share_plus: ^13.2.0
   google_fonts: ^8.1.0
 
+  # Optional sign-in (Google SSO); email+password goes through the backend
+  google_sign_in: ^6.3.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

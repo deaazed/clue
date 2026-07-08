@@ -2,6 +2,8 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'features/account/account_page.dart';
+import 'features/community/community_page.dart';
 import 'features/home/home_page.dart';
 import 'features/timeline/timeline_page.dart';
 import 'features/search/search_page.dart';
@@ -45,9 +47,15 @@ final _router = GoRouter(
               autofocus: s.uri.queryParameters['focus'] == '1'),
         ),
         GoRoute(path: '/places', builder: (c, s) => const PlacesPage()),
+        GoRoute(
+            path: '/community', builder: (c, s) => const CommunityPage()),
         GoRoute(path: '/dev/logger', builder: (c, s) => const LoggerPage()),
         GoRoute(path: '/dev/sessions', builder: (c, s) => const SessionsPage()),
       ],
+    ),
+    GoRoute(
+      path: '/account',
+      builder: (c, s) => const AccountPage(),
     ),
     GoRoute(
       path: '/memory',
@@ -194,11 +202,12 @@ class _Shell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final path = GoRouterState.of(context).uri.path;
-    // Tab order: Map(0) · Search(1) · Clues(2) · Places(3)
+    // Tab order: Map(0) · Search(1) · Clues(2) · Places(3) · Community(4)
     final index = switch (path) {
       String p when p.startsWith('/search') => 1,
       String p when p.startsWith('/timeline') => 2,
       String p when p.startsWith('/places') => 3,
+      String p when p.startsWith('/community') => 4,
       _ => 0,
     };
 
@@ -212,6 +221,7 @@ class _Shell extends StatelessWidget {
             case 1: context.go('/search');
             case 2: context.go('/timeline');
             case 3: context.go('/places');
+            case 4: context.go('/community');
           }
         },
       ),
@@ -250,6 +260,7 @@ class _BottomNav extends StatelessWidget {
                   _NavItem(icon: Icons.search, label: 'Search', selected: index == 1, onTap: () => onTap(1)),
                   _NavItem(icon: Icons.bookmark, label: 'Clues', selected: index == 2, onTap: () => onTap(2)),
                   _NavItem(icon: Icons.business, label: 'Places', selected: index == 3, onTap: () => onTap(3)),
+                  _NavItem(icon: Icons.groups, label: 'Hive', selected: index == 4, onTap: () => onTap(4)),
                 ],
               ),
             ),
