@@ -1,3 +1,5 @@
+pub mod auth;
+mod community;
 mod health;
 mod memories;
 mod places;
@@ -12,4 +14,6 @@ pub fn router() -> Router<PgPool> {
         .nest("/api", sessions::router())
         .nest("/api", places::router())
         .nest("/api", memories::router())
+        .nest("/api", auth::router())
+        .nest("/api", community::router())
 }

@@ -26,3 +26,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Config
 dotenvy = "0.15"
+
+# Auth
+reqwest = { version = "0.12", default-features = false, features = ["json", "native-tls"] }
+bcrypt = "0.16"

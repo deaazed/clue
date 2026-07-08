@@ -1,9 +1,11 @@
 use axum::{
     extract::{Path, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     routing::{delete, get, post},
     Json, Router,
 };
+
+use super::auth;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::PgPool;
@@ -48,14 +50,16 @@ struct MemoryRow {
 
 async fn create(
     State(pool): State<PgPool>,
+    headers: HeaderMap,
     Json(body): Json<CreateMemory>,
 ) -> Result<StatusCode, StatusCode> {
     let ble = body.ble_devices.unwrap_or_else(|| Value::Array(vec![]));
     let icon = body.icon_type.unwrap_or_else(|| "other".into());
+    let user_id = auth::user_id_from_headers(&pool, &headers).await;
 
     sqlx::query(
-        "INSERT INTO memories (id, place_id, label, icon_type, note, lat, lng, ble_devices, path, boundary, timestamp_ms)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        "INSERT INTO memories (id, place_id, label, icon_type, note, lat, lng, ble_devices, path, boundary, timestamp_ms, user_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
          ON CONFLICT (id) DO UPDATE
            SET label       = EXCLUDED.label,
                icon_type   = EXCLUDED.icon_type,
@@ -64,7 +68,8 @@ async fn create(
                lng         = EXCLUDED.lng,
                ble_devices = EXCLUDED.ble_devices,
                path        = EXCLUDED.path,
-               boundary    = EXCLUDED.boundary",
+               boundary    = EXCLUDED.boundary,
+               user_id     = COALESCE(EXCLUDED.user_id, memories.user_id)",
     )
     .bind(&body.id)
     .bind(&body.place_id)
@@ -77,6 +82,7 @@ async fn create(
     .bind(&body.path)
     .bind(&body.boundary)
     .bind(body.timestamp_ms)
+    .bind(&user_id)
     .execute(&pool)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;

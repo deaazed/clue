@@ -1,9 +1,11 @@
 use axum::{
     extract::{Path, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     routing::{delete, get, post, put},
     Json, Router,
 };
+
+use super::auth;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::PgPool;
@@ -36,20 +38,24 @@ struct PlaceRow {
     timestamp_ms: i64,
 }
 
-/// POST /api/places — create or update (full upsert so renames and shapes sync correctly)
+/// POST /api/places — create or update (full upsert so renames and shapes sync correctly).
+/// Attributed to the bearer-token user when signed in; anonymous otherwise.
 async fn upsert(
     State(pool): State<PgPool>,
+    headers: HeaderMap,
     Json(body): Json<PlaceBody>,
 ) -> Result<StatusCode, StatusCode> {
     let id = body.id.ok_or(StatusCode::BAD_REQUEST)?;
+    let user_id = auth::user_id_from_headers(&pool, &headers).await;
     sqlx::query(
-        "INSERT INTO places (id, name, lat, lng, boundary, timestamp_ms)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        "INSERT INTO places (id, name, lat, lng, boundary, timestamp_ms, user_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          ON CONFLICT (id) DO UPDATE
            SET name        = EXCLUDED.name,
                lat         = EXCLUDED.lat,
                lng         = EXCLUDED.lng,
-               boundary    = EXCLUDED.boundary",
+               boundary    = EXCLUDED.boundary,
+               user_id     = COALESCE(EXCLUDED.user_id, places.user_id)",
     )
     .bind(&id)
     .bind(&body.name)
@@ -57,6 +63,7 @@ async fn upsert(
     .bind(body.lng)
     .bind(&body.boundary)
     .bind(body.timestamp_ms)
+    .bind(&user_id)
     .execute(&pool)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
