@@ -13,4 +13,5 @@ const String kOsmTilesUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 // Console (used as serverClientId so Android returns an ID token the backend
 // can verify). Leave empty until configured — the Google button hides itself
 // and email sign-in still works. See docs/GOOGLE_SIGNIN_SETUP.md.
-const String kGoogleServerClientId = '';
+const String kGoogleServerClientId =
+    '985498304664-rigdlljcn90rrtoc09jolig0rm1k6r5c.apps.googleusercontent.com';

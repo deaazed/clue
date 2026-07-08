@@ -21,6 +21,8 @@ services:
       DATABASE_URL: postgres://clue:${POSTGRES_PASSWORD}@postgres/clue?sslmode=disable
       PORT: ${PORT:-3000}
       TILES_DIR: /data/tiles
+      # Pin Google sign-in tokens to Clue's own OAuth client (public ID, not a secret)
+      GOOGLE_CLIENT_ID: 985498304664-rigdlljcn90rrtoc09jolig0rm1k6r5c.apps.googleusercontent.com
     ports:
       - "${PORT:-3000}:${PORT:-3000}"
     volumes:
