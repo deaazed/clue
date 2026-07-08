@@ -8,8 +8,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:sensors_plus/sensors_plus.dart';
-import 'package:vector_map_tiles/vector_map_tiles.dart';
-import 'package:vector_map_tiles_pmtiles/vector_map_tiles_pmtiles.dart';
 import '../../config.dart';
 import '../../models/place.dart';
 import '../../services/place_repository.dart';
@@ -31,16 +29,12 @@ class _HomePageState extends State<HomePage> {
   double? _heading;
   double _magX = 0, _magY = 0; // low-pass filtered magnetometer
   final _mapController = MapController();
-  late final Future<PmTilesVectorTileProvider> _tileProviderFuture;
-  static const _osmZoomThreshold = 14.0;
-  bool _useOsmRaster = false;
   StreamSubscription<Position>? _positionSub;
   StreamSubscription<MagnetometerEvent>? _magnetometerSub;
 
   @override
   void initState() {
     super.initState();
-    _tileProviderFuture = PmTilesVectorTileProvider.fromSource(kTilesUrl);
     _load();
     _startLocationStream();
     _startHeadingStream();
@@ -162,13 +156,7 @@ class _HomePageState extends State<HomePage> {
             options: MapOptions(
               initialCenter: const LatLng(48.8566, 2.3522),
               initialZoom: 5,
-              onMapEvent: (event) {
-                final zoom = event.camera.zoom;
-                final wantsOsm = zoom >= _osmZoomThreshold;
-                if (wantsOsm != _useOsmRaster) {
-                  setState(() => _useOsmRaster = wantsOsm);
-                }
-              },
+              maxZoom: 20,
               onTap: (_, latLng) {
                 for (final p in _places) {
                   if (p.boundary != null &&
@@ -181,34 +169,17 @@ class _HomePageState extends State<HomePage> {
               },
             ),
             children: [
-              if (_useOsmRaster)
-                TileLayer(
-                  urlTemplate: isDark ? cartoUrl : kOsmTilesUrl,
-                  subdomains: isDark ? const ['a', 'b', 'c', 'd'] : const [],
-                  maxNativeZoom: 19,
-                  userAgentPackageName: 'com.clue',
-                )
-              else
-                FutureBuilder<PmTilesVectorTileProvider>(
-                  future: _tileProviderFuture,
-                  builder: (context, snap) {
-                    if (snap.hasData) {
-                      return VectorTileLayer(
-                        tileProviders:
-                            TileProviders({'protomaps': snap.data!}),
-                        theme: isDark
-                            ? ProtomapsThemes.darkV4()
-                            : ProtomapsThemes.lightV4(),
-                        maximumZoom: 15,
-                      );
-                    }
-                    return TileLayer(
-                      urlTemplate: cartoUrl,
-                      subdomains: const ['a', 'b', 'c', 'd'],
-                      userAgentPackageName: 'com.clue',
-                    );
-                  },
-                ),
+              // Single raster source per theme — no mid-zoom layer swap.
+              // OSM standard carries indoor detail at high zoom in light mode;
+              // CARTO Dark Matter is the only no-key dark raster.
+              TileLayer(
+                urlTemplate: isDark ? cartoUrl : kOsmTilesUrl,
+                subdomains: isDark ? const ['a', 'b', 'c', 'd'] : const [],
+                maxNativeZoom: isDark ? 20 : 19,
+                panBuffer: 2,
+                keepBuffer: 4,
+                userAgentPackageName: 'com.clue',
+              ),
 
               // Place boundary polygons
               PolygonLayer(

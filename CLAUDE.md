@@ -163,10 +163,10 @@ Package: `clue_sl` · Org: `com.clue` · Android + iOS only
 
 Dependencies: `go_router`, `sensors_plus`, `flutter_blue_plus`, `path_provider`, `http`, `permission_handler`, `flutter_foreground_task`, `flutter_svg`, `geolocator`, `flutter_map`, `latlong2`, `url_launcher`, `share_plus`
 
-Map tiles:
-- Light: `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png` (CARTO Positron)
-- Dark: `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png` (CARTO Dark Matter)
-- Subdomains: `a,b,c,d` — no API key required
+Map tiles (home map — single raster layer, no mid-zoom swap):
+- Light: `https://tile.openstreetmap.org/{z}/{x}/{y}.png` (OSM standard, indoor detail at high zoom, maxNativeZoom 19)
+- Dark: `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png` (CARTO Dark Matter, subdomains `a,b,c,d`, maxNativeZoom 20)
+- CARTO Positron light raster still used on secondary maps (picker, detail) — no API key required anywhere
 
 Memory model: icon types with colors — `item` (amber) · `place` (emerald) · `parking` (blue) · `gate` (orange) · `outlet` (yellow) · `restroom` (violet) · `other` (gray)
 
@@ -246,7 +246,7 @@ Budget constraint: **€15/month**, max €250/year.
 - Share feature uses `share_plus` v10 API: `Share.share(text)` (not ShareParams, which is v11+)
 - Multilanguage deferred to a future milestone
 - Indoor map (#16): self-hosted PMTiles on VPS via Caddy static file + byte-range. Mapbox rejected (external dependency, API key). MapCache rejected (caching proxy only, doesn't add zoom or indoor data). MapServer rejected (heavy OGC stack, overkill). PMTiles uses same OSM indoor data as Mapbox, keeps flutter_map, zero running cost, Phase 4 floor plan overlays served from same VPS
-- Vector tile stack: `vector_map_tiles: ^8.0.0` + `vector_map_tiles_pmtiles: ^1.5.0`; `PmTilesVectorTileProvider.fromSource(kTilesUrl)`; `ProtomapsThemes.lightV4()` / `darkV4()` (v4 schema); CARTO raster as FutureBuilder fallback while provider initialises
+- Vector tiles dropped from home map (#36, 2026-07-08): the PMTiles vector layer was CPU-heavy and swapped abruptly to raster at zoom 14 → janky loading. Home map now uses a single raster source per theme: OSM standard (light — indoor detail at high zoom) / CARTO Dark Matter (dark), `panBuffer: 2`, `keepBuffer: 4`, no mid-zoom swap. `vector_map_tiles` + `vector_map_tiles_pmtiles` removed from pubspec; PMTiles file stays on the VPS for Phase 4 floor-plan overlays (`kTilesUrl` kept in config)
 - AppSpacing: 4 px base grid — xs=4, sm=8, md=16, lg=24, xl=32, xxl=48; cardRadius=16, sheetRadius=24, iconRadius=12
 - BottomSheetThemeData: global `showDragHandle: true`, `dragHandleSize: Size(32,4)`, `RoundedRectangleBorder(radius: 24)` — no per-sheet shape needed
 - Hero animations: `hero_icon_${memory.id}` tag on MemoryCard icon container → MemoryDetailPage header icon (52×52)
@@ -258,6 +258,7 @@ Budget constraint: **€15/month**, max €250/year.
 
 ### Always
 
+- **Every user-requested task gets a GitHub issue** (`gh issue create`) before or as work starts; commits reference it with `[#<issue>] - <message>`. Close the issue when the task is delivered.
 - Prefer the smallest working solution
 - Small commits, incremental delivery
 - Testable components
