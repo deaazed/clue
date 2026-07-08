@@ -51,16 +51,23 @@ class PlaceRepository {
     ApiClient.deletePlace(id).catchError((_) {});
   }
 
-  /// Called once at startup — if local cache is empty, pull from backend.
-  /// Silently no-ops on network failure.
-  static Future<void> restoreFromServer() async {
+  /// Pull places from the backend into local storage. By default only runs
+  /// when the local cache is empty (startup after reinstall); [force] pulls
+  /// unconditionally (server wins). Returns how many places were restored;
+  /// silently returns 0 on network failure.
+  static Future<int> restoreFromServer({bool force = false}) async {
     try {
-      final existing = await loadAll();
-      if (existing.isNotEmpty) return;
+      if (!force) {
+        final existing = await loadAll();
+        if (existing.isNotEmpty) return 0;
+      }
       final places = await ApiClient.fetchPlaces();
       for (final p in places) {
         await _saveLocally(p);
       }
-    } catch (_) {}
+      return places.length;
+    } catch (_) {
+      return 0;
+    }
   }
 }

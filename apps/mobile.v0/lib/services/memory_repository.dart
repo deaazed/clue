@@ -57,16 +57,23 @@ class MemoryRepository {
     }
   }
 
-  /// Called once at startup — if local cache is empty, pull from backend.
-  /// Silently no-ops on network failure.
-  static Future<void> restoreFromServer() async {
+  /// Pull memories from the backend into local storage. By default only runs
+  /// when the local cache is empty (startup after reinstall); [force] pulls
+  /// unconditionally (server wins). Returns how many memories were restored;
+  /// silently returns 0 on network failure.
+  static Future<int> restoreFromServer({bool force = false}) async {
     try {
-      final existing = await loadAll();
-      if (existing.isNotEmpty) return;
+      if (!force) {
+        final existing = await loadAll();
+        if (existing.isNotEmpty) return 0;
+      }
       final memories = await ApiClient.fetchMemories();
       for (final m in memories) {
         await _saveLocally(m);
       }
-    } catch (_) {}
+      return memories.length;
+    } catch (_) {
+      return 0;
+    }
   }
 }

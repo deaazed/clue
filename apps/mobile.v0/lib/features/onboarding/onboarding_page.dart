@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../../services/api_client.dart';
+import '../../services/memory_repository.dart';
+import '../../services/place_repository.dart';
 import '../../theme/colors.dart';
 import '../../main.dart';
 
@@ -34,10 +37,31 @@ class OnboardingPage extends StatefulWidget {
 
 class _OnboardingPageState extends State<OnboardingPage> {
   bool _loading = false;
+  bool _restoring = false;
+  // Live stats from the backend for the hive banner; null while loading/offline
+  int? _placeCount;
+  int? _clueCount;
 
-  Future<void> _getStarted() async {
-    setState(() => _loading = true);
+  @override
+  void initState() {
+    super.initState();
+    _fetchStats();
+  }
 
+  Future<void> _fetchStats() async {
+    try {
+      final places = await ApiClient.fetchPlaces();
+      final memories = await ApiClient.fetchMemories();
+      if (mounted) {
+        setState(() {
+          _placeCount = places.length;
+          _clueCount = memories.length;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _requestPermissionsAndFinish() async {
     await [
       Permission.locationWhenInUse,
       Permission.bluetoothScan,
@@ -53,6 +77,30 @@ class _OnboardingPageState extends State<OnboardingPage> {
     kIsFirstLaunch = false;
 
     if (mounted) context.go('/home');
+  }
+
+  Future<void> _getStarted() async {
+    setState(() => _loading = true);
+    await _requestPermissionsAndFinish();
+  }
+
+  /// "Restore my clues" — pulls all places and memories back from the
+  /// backend (the reinstall path), then continues like Get started.
+  Future<void> _restore() async {
+    setState(() => _restoring = true);
+
+    final places = await PlaceRepository.restoreFromServer(force: true);
+    final clues = await MemoryRepository.restoreFromServer(force: true);
+
+    if (mounted && places == 0 && clues == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nothing to restore yet — start dropping clues!'),
+        ),
+      );
+    }
+
+    await _requestPermissionsAndFinish();
   }
 
   @override
@@ -212,25 +260,31 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     const SizedBox(width: 11),
                     Expanded(
                       child: RichText(
-                        text: const TextSpan(
-                          style: TextStyle(
+                        text: TextSpan(
+                          style: const TextStyle(
                             fontSize: 12.5,
                             height: 1.45,
                             color: Color(0xFFE9E1D4),
                           ),
                           children: [
-                            TextSpan(
+                            const TextSpan(
                                 text:
                                     'Every clue you drop teaches the hive. '),
-                            TextSpan(
-                              text: '4,200 people',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFFF3B778),
+                            if (_clueCount != null && _placeCount != null &&
+                                (_clueCount! > 0 || _placeCount! > 0)) ...[
+                              TextSpan(
+                                text:
+                                    '$_clueCount clue${_clueCount == 1 ? '' : 's'} across $_placeCount place${_placeCount == 1 ? '' : 's'}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFFF3B778),
+                                ),
                               ),
-                            ),
-                            TextSpan(
-                                text: ' helped map new places this week.'),
+                              const TextSpan(text: ' mapped so far.'),
+                            ] else
+                              const TextSpan(
+                                  text:
+                                      'Help map new places as you go.'),
                           ],
                         ),
                       ),
@@ -273,22 +327,38 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
               const SizedBox(height: 14),
 
-              // Log in link
-              Text.rich(
-                TextSpan(
-                  style: TextStyle(fontSize: 13.5, color: mutedColor),
-                  children: [
-                    const TextSpan(text: 'Already have an account? '),
-                    TextSpan(
-                      text: 'Log in',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: inkColor,
+              // Restore link — pulls existing data back after a reinstall
+              _restoring
+                  ? SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: mutedColor),
+                    )
+                  : GestureDetector(
+                      onTap: _loading ? null : _restore,
+                      behavior: HitTestBehavior.opaque,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 6),
+                        child: Text.rich(
+                          TextSpan(
+                            style:
+                                TextStyle(fontSize: 13.5, color: mutedColor),
+                            children: [
+                              const TextSpan(text: 'Already used Clue? '),
+                              TextSpan(
+                                text: 'Restore my clues',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: inkColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),
