@@ -183,35 +183,33 @@ class _AccountPageState extends State<AccountPage> {
       ),
       const SizedBox(height: 22),
 
-      if (AuthService.googleConfigured) ...[
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed:
-                _busy ? null : () => _run(AuthService.signInWithGoogle),
-            icon: const Icon(Icons.g_mobiledata, size: 28),
-            label: const Text('Continue with Google'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: inkColor,
-              side: BorderSide(color: borderColor),
-              padding: const EdgeInsets.symmetric(vertical: 13),
-            ),
+      SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed:
+              _busy ? null : () => _run(AuthService.signInWithGoogle),
+          icon: const Icon(Icons.g_mobiledata, size: 28),
+          label: const Text('Continue with Google'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: inkColor,
+            side: BorderSide(color: borderColor),
+            padding: const EdgeInsets.symmetric(vertical: 13),
           ),
         ),
-        const SizedBox(height: 18),
-        Row(
-          children: [
-            Expanded(child: Divider(color: borderColor)),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text('or',
-                  style: TextStyle(fontSize: 12, color: mutedColor)),
-            ),
-            Expanded(child: Divider(color: borderColor)),
-          ],
-        ),
-        const SizedBox(height: 18),
-      ],
+      ),
+      const SizedBox(height: 18),
+      Row(
+        children: [
+          Expanded(child: Divider(color: borderColor)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text('or',
+                style: TextStyle(fontSize: 12, color: mutedColor)),
+          ),
+          Expanded(child: Divider(color: borderColor)),
+        ],
+      ),
+      const SizedBox(height: 18),
 
       if (_registering)
         _field('DISPLAY NAME', _nameCtrl, cardBg, borderColor, inkColor,

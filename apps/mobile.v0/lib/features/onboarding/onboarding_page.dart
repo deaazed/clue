@@ -14,17 +14,22 @@ const _steps = [
   (
     icon: Icons.storefront_outlined,
     title: 'Add a place',
-    desc: 'Step inside a venue and name it. Clue marks where you are.',
+    desc: 'Name the venue you\'re in — then walk or draw its shape right onto the map.',
   ),
   (
     icon: Icons.location_on_outlined,
-    title: 'Drop a clue',
-    desc: 'Walk to an item, tap "I\'m here", and leave a quick note.',
+    title: 'Drop clues inside',
+    desc: 'Walk to an item, mark the spot, and leave a quick note so you find it again.',
   ),
   (
-    icon: Icons.bookmark_border,
-    title: 'Never forget',
-    desc: 'Your clues stay on the map so you always know where to find things.',
+    icon: Icons.lock_outline,
+    title: 'Public or private',
+    desc: 'Keep clues just for you, or make them public so others find things faster too.',
+  ),
+  (
+    icon: Icons.emoji_events_outlined,
+    title: 'Get credit',
+    desc: 'Sign in (optional) and your public clues count towards the hive leaderboard.',
   ),
 ];
 
