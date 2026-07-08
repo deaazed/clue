@@ -256,7 +256,7 @@ class _HomePageState extends State<HomePage> {
                 0,
               ),
               child: GestureDetector(
-                onTap: () => context.go('/search'),
+                onTap: () => context.go('/search?focus=1'),
                 child: Material(
                   elevation: 4,
                   shadowColor: Colors.black26,

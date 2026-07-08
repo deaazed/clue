@@ -39,7 +39,11 @@ final _router = GoRouter(
       routes: [
         GoRoute(path: '/home', builder: (c, s) => const HomePage()),
         GoRoute(path: '/timeline', builder: (c, s) => const TimelinePage()),
-        GoRoute(path: '/search', builder: (c, s) => const SearchPage()),
+        GoRoute(
+          path: '/search',
+          builder: (c, s) => SearchPage(
+              autofocus: s.uri.queryParameters['focus'] == '1'),
+        ),
         GoRoute(path: '/places', builder: (c, s) => const PlacesPage()),
         GoRoute(path: '/dev/logger', builder: (c, s) => const LoggerPage()),
         GoRoute(path: '/dev/sessions', builder: (c, s) => const SessionsPage()),

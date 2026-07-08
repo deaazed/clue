@@ -6,7 +6,10 @@ import '../../theme/spacing.dart';
 import '../../widgets/memory_card.dart';
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+  const SearchPage({super.key, this.autofocus = false});
+  /// True when opened from the home search bar — user intends to type.
+  /// False from the bottom nav — user may just want to browse.
+  final bool autofocus;
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -59,7 +62,7 @@ class _SearchPageState extends State<SearchPage> {
         automaticallyImplyLeading: false,
         title: TextField(
           controller: _ctrl,
-          autofocus: false,
+          autofocus: widget.autofocus,
           textCapitalization: TextCapitalization.sentences,
           decoration: InputDecoration(
             hintText: 'Search memories…',
